@@ -53,7 +53,8 @@ if [ -f "${VERSION_FILE}" ] && [ "$(cat "${VERSION_FILE}")" = "${expected_sha}" 
   exit 0
 fi
 
-sha256sum -c "${ASSET_NAME}.sha256"
+printf '%s  %s\n' "${expected_sha}" "${ASSET_NAME}" > "${ASSET_NAME}.sha256.local"
+sha256sum -c "${ASSET_NAME}.sha256.local"
 chmod +x "${ASSET_NAME}"
 
 systemctl stop "${SERVICE}"
