@@ -10,7 +10,7 @@ INSTALL_DIR="/opt/${APP_NAME}"
 BIN_PATH="${INSTALL_DIR}/${APP_NAME}"
 SERVICE="${APP_NAME}"
 STATE_DIR="/var/lib/${APP_NAME}"
-VERSION_FILE="${STATE_DIR}/deployed-release.txt"
+VERSION_FILE="${STATE_DIR}/deployed-sha256.txt"
 WORK_DIR="$(mktemp -d)"
 
 cleanup() {
@@ -29,17 +29,10 @@ release_json="${WORK_DIR}/release.json"
 curl "${header_args[@]}" "${API_BASE}" -o "${release_json}"
 
 tag="$(grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' "${release_json}" | head -n1 | sed 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')"
-published="$(grep -o '"published_at"[[:space:]]*:[[:space:]]*"[^"]*"' "${release_json}" | head -n1 | sed 's/.*"published_at"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')"
-release_id="${tag}-${published}"
 
-if [ -z "${tag}" ] || [ -z "${published}" ]; then
+if [ -z "${tag}" ]; then
   echo "Cannot read latest release metadata from ${REPO}" >&2
   exit 1
-fi
-
-if [ -f "${VERSION_FILE}" ] && [ "$(cat "${VERSION_FILE}")" = "${release_id}" ]; then
-  echo "${APP_NAME} already up to date: ${release_id}"
-  exit 0
 fi
 
 asset_url="$(grep -A 20 "\"name\"[[:space:]]*:[[:space:]]*\"${ASSET_NAME}\"" "${release_json}" | grep -m1 '"browser_download_url"' | sed 's/.*"browser_download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')"
@@ -54,6 +47,12 @@ curl "${header_args[@]}" -L "${asset_url}" -o "${WORK_DIR}/${ASSET_NAME}"
 curl "${header_args[@]}" -L "${sha_url}" -o "${WORK_DIR}/${ASSET_NAME}.sha256"
 
 cd "${WORK_DIR}"
+expected_sha="$(awk '{print $1}' "${ASSET_NAME}.sha256" | head -n1)"
+if [ -f "${VERSION_FILE}" ] && [ "$(cat "${VERSION_FILE}")" = "${expected_sha}" ]; then
+  echo "${APP_NAME} already up to date: ${expected_sha}"
+  exit 0
+fi
+
 sha256sum -c "${ASSET_NAME}.sha256"
 chmod +x "${ASSET_NAME}"
 
@@ -63,6 +62,5 @@ systemctl start "${SERVICE}"
 systemctl is-active "${SERVICE}"
 curl -fsSI "http://127.0.0.1:8099/" >/dev/null
 
-printf '%s' "${release_id}" > "${VERSION_FILE}"
-echo "${APP_NAME} deployed: ${release_id}"
-
+printf '%s' "${expected_sha}" > "${VERSION_FILE}"
+echo "${APP_NAME} deployed from ${tag}: ${expected_sha}"
