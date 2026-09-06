@@ -1,0 +1,10 @@
+[Unit]
+Description=Update HG680P Monitor from GitHub Release
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/hg680p-monitor/update.env
+ExecStart=/usr/local/sbin/hg680p-monitor-auto-update
+

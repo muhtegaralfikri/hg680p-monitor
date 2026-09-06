@@ -1,0 +1,945 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HG680P Monitor</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b101a;
+      --panel: #111726;
+      --panel-2: #0f1625;
+      --line: #1e293b;
+      --line-soft: rgba(30, 41, 59, .72);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --faint: #64748b;
+      --safe: #3b82f6;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --shadow: 0 14px 40px rgba(0, 0, 0, .24);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    main {
+      width: min(1280px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 20px 0 30px;
+    }
+
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .nowrap { white-space: nowrap; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: rgba(17, 23, 38, .86);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      border-radius: 9px;
+      border: 1px solid rgba(16, 185, 129, .28);
+      background: rgba(16, 185, 129, .1);
+      color: #34d399;
+      font-weight: 800;
+    }
+
+    h1, h2, p { margin: 0; }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 21px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .tag, .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      max-width: 100%;
+      padding: 2px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #172033;
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tag { color: #34d399; }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #0b1220;
+      color: #cbd5e1;
+      font-size: 12px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+    }
+
+    .live-dot {
+      position: relative;
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(16, 185, 129, .8);
+    }
+
+    .live-dot::before {
+      content: "";
+      position: absolute;
+      inset: -5px;
+      border-radius: inherit;
+      background: rgba(16, 185, 129, .18);
+      animation: pulse 1.6s infinite ease-out;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(.62); opacity: .92; }
+      to { transform: scale(1.6); opacity: 0; }
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+
+    .card {
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: rgba(17, 23, 38, .86);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+      overflow: hidden;
+    }
+
+    .metric {
+      --status: var(--safe);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 152px;
+      padding: 16px;
+    }
+
+    .metric::before {
+      content: "";
+      display: block;
+      height: 3px;
+      margin: -16px -16px 14px;
+      background: var(--status);
+      opacity: .9;
+    }
+
+    .metric-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .metric-head .badge { max-width: 58%; font-size: 11px; }
+
+    .metric-value {
+      margin-top: 14px;
+      color: var(--status);
+      font-size: 30px;
+      font-weight: 850;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .metric-value small {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .metric-detail {
+      min-height: 36px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .bar {
+      width: 100%;
+      height: 7px;
+      margin-top: 12px;
+      border-radius: 99px;
+      background: rgba(30, 41, 59, .85);
+      overflow: hidden;
+    }
+
+    .bar > span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--status);
+      transition: width .25s ease, background-color .25s ease;
+    }
+
+    .panel { padding: 18px; }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid rgba(30, 41, 59, .75);
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .title::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 2px;
+      background: var(--green);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 3px 9px;
+      border: 1px solid rgba(16, 185, 129, .35);
+      border-radius: 999px;
+      background: rgba(16, 185, 129, .1);
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 99px;
+      background: currentColor;
+    }
+
+    .status-pill.orange {
+      border-color: rgba(245, 158, 11, .35);
+      background: rgba(245, 158, 11, .1);
+      color: #fbbf24;
+    }
+
+    .status-pill.red {
+      border-color: rgba(239, 68, 68, .42);
+      background: rgba(239, 68, 68, .1);
+      color: #f87171;
+    }
+
+    .rows {
+      display: grid;
+      gap: 0;
+      margin-top: 12px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, .48);
+    }
+
+    .row:last-child { border-bottom: 0; }
+    .row strong { color: #e2e8f0; }
+
+    .progress-row {
+      display: grid;
+      gap: 7px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, .48);
+    }
+
+    .progress-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .progress-main {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .mount-line {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .mount-name {
+      flex: 0 0 auto;
+    }
+
+    .mount-meta {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .service-list, .container-list, .disk-list {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .service-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(30, 41, 59, .48);
+    }
+
+    .service-item:last-child { border-bottom: 0; }
+
+    .service-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-weight: 750;
+    }
+
+    .service-name::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .service-item.off .service-name::before { background: var(--red); }
+
+    .mini-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      max-width: 100%;
+      padding: 11px;
+      border: 1px solid rgba(30, 41, 59, .65);
+      border-radius: 9px;
+      background: rgba(15, 22, 37, .68);
+    }
+
+    .mini-main {
+      min-width: 0;
+      max-width: 100%;
+      flex: 1 1 auto;
+    }
+
+    .mini-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      color: #e2e8f0;
+      font-weight: 800;
+    }
+
+    .mini-title::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .mini-card.off .mini-title::before { background: var(--red); }
+
+    .truncate {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .clamp {
+      display: -webkit-box;
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .section { margin-top: 18px; }
+    .table-wrap { overflow: hidden; }
+
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(30, 41, 59, .62);
+      vertical-align: top;
+    }
+
+    td:first-child {
+      min-width: 0;
+      max-width: 1px;
+      width: 100%;
+    }
+
+    th {
+      background: rgba(15, 22, 37, .72);
+      color: var(--muted);
+      font-size: 11px;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    th.right, td.right { text-align: right; }
+    th:nth-child(2), td:nth-child(2) { width: 110px; }
+    th:nth-child(3), td:nth-child(3) { width: 82px; }
+    th:nth-child(4), td:nth-child(4) { width: 90px; }
+    tbody tr:hover { background: rgba(30, 41, 59, .18); }
+
+    .process-name {
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .process-command {
+      display: -webkit-box;
+      max-width: 100%;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-clamp: 2;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .mobile-processes {
+      display: none;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    footer {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(30, 41, 59, .55);
+      color: var(--faint);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .details { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      main {
+        width: min(100% - 20px, 1280px);
+        padding-top: 12px;
+      }
+
+      .header {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 14px;
+      }
+
+      h1 { font-size: 19px; }
+      .live-pill { width: 100%; }
+      .metrics { grid-template-columns: 1fr; }
+      .metric { min-height: 138px; }
+      .metric-value { font-size: 28px; }
+      .panel { padding: 15px; }
+
+      .panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .progress-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .mount-line {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .mount-meta {
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
+      .mini-card {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .mini-main {
+        width: 100%;
+      }
+
+      .table-wrap { display: none; }
+      .mobile-processes { display: grid; }
+      footer { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark mono">STB</div>
+        <div class="truncate">
+          <h1>
+            <span>HG680P Monitor</span>
+            <span class="tag mono" id="hostnameTag">-</span>
+          </h1>
+          <p class="muted mono" id="subtitle">Memuat data server...</p>
+        </div>
+      </div>
+      <div class="live-pill mono">
+        <span class="live-dot"></span>
+        <span>Update <strong id="updatedTime">-</strong></span>
+      </div>
+    </header>
+
+    <section class="grid metrics" aria-label="Statistik utama">
+      <article class="card metric" id="cpuCard">
+        <div>
+          <div class="metric-head"><span class="label">CPU</span><span class="badge mono" id="cpuBadge">-</span></div>
+          <div class="metric-value mono"><span id="cpuValue">-</span><small>%</small></div>
+          <p class="metric-detail mono" id="cpuDetail">-</p>
+        </div>
+        <div class="bar"><span id="cpuBar"></span></div>
+      </article>
+
+      <article class="card metric" id="ramCard">
+        <div>
+          <div class="metric-head"><span class="label">RAM</span><span class="badge mono" id="ramBadge">-</span></div>
+          <div class="metric-value mono"><span id="ramValue">-</span><small>%</small></div>
+          <p class="metric-detail mono" id="ramDetail">-</p>
+        </div>
+        <div class="bar"><span id="ramBar"></span></div>
+      </article>
+
+      <article class="card metric" id="diskCard">
+        <div>
+          <div class="metric-head"><span class="label">Disk Root</span><span class="badge mono" id="diskBadge">-</span></div>
+          <div class="metric-value mono"><span id="diskValue">-</span><small>%</small></div>
+          <p class="metric-detail mono" id="diskDetail">-</p>
+        </div>
+        <div class="bar"><span id="diskBar"></span></div>
+      </article>
+
+      <article class="card metric" id="tempCard">
+        <div>
+          <div class="metric-head"><span class="label">Suhu</span><span class="badge mono" id="tempBadge">-</span></div>
+          <div class="metric-value mono"><span id="tempValue">-</span><small>&deg;C</small></div>
+          <p class="metric-detail mono" id="tempDetail">-</p>
+        </div>
+        <div class="bar"><span id="tempBar"></span></div>
+      </article>
+    </section>
+
+    <section class="grid details" aria-label="Detail server">
+      <article class="card panel">
+        <div class="panel-head"><h2 class="title">Ringkasan Server</h2><span class="status-pill mono" id="overallBadge">baik</span></div>
+        <div class="rows">
+          <div class="row"><span class="muted">Hostname</span><strong class="mono" id="summaryHost">-</strong></div>
+          <div class="row"><span class="muted">Uptime</span><strong class="mono" id="summaryUptime">-</strong></div>
+          <div class="progress-row">
+            <div class="progress-head"><span class="muted">Swap</span><strong class="mono" id="swapLabel">-</strong></div>
+            <div class="bar"><span id="swapBar"></span></div>
+            <div class="mono muted" id="swapDetail">-</div>
+          </div>
+          <div class="row"><span class="muted">Catatan</span><strong class="mono" id="summaryNote">-</strong></div>
+        </div>
+      </article>
+
+      <article class="card panel">
+        <div class="panel-head"><h2 class="title">Service Penting</h2><span class="badge mono" id="servicesCount">-</span></div>
+        <ul class="service-list" id="services"></ul>
+      </article>
+
+      <article class="card panel">
+        <div class="panel-head"><h2 class="title">Disk &amp; Mount</h2><span class="muted mono">Storage</span></div>
+        <div class="disk-list" id="disks"></div>
+      </article>
+
+      <article class="card panel">
+        <div class="panel-head"><h2 class="title">Docker Container</h2><span class="badge mono" id="containersCount">-</span></div>
+        <div class="container-list" id="containers"></div>
+      </article>
+    </section>
+
+    <section class="card section" aria-label="Proses paling berat">
+      <div class="panel-head panel"><h2 class="title">Proses Paling Berat</h2><span class="muted mono">Top Resource Usage</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Proses</th><th class="right">RAM</th><th class="right">CPU</th><th class="right">PID</th></tr>
+          </thead>
+          <tbody id="processRows"></tbody>
+        </table>
+      </div>
+      <div class="mobile-processes" id="mobileProcesses"></div>
+    </section>
+
+    <footer class="mono">HG680P - Armbian Linux - Auto-refresh 5s - Single Page System Monitor</footer>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const COLORS = { safe: "#3b82f6", orange: "#f59e0b", red: "#ef4444" };
+
+    function esc(value) {
+      return String(value ?? "-").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function pct(value) {
+      const n = Number(value || 0);
+      return Math.max(0, Math.min(100, n));
+    }
+
+    function one(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
+      return Number(value).toFixed(1);
+    }
+
+    function size(bytes) {
+      const n = Number(bytes || 0);
+      if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
+      if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+      if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`;
+      return `${n} B`;
+    }
+
+    function uptime(seconds) {
+      const total = Number(seconds || 0);
+      const days = Math.floor(total / 86400);
+      const hours = Math.floor((total % 86400) / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      if (days > 0) return `${days} hari ${hours} jam`;
+      if (hours > 0) return `${hours} jam ${minutes} menit`;
+      return `${minutes} menit`;
+    }
+
+    function statusTone(value) {
+      const n = pct(value);
+      if (n >= 85) return { key: "red", color: COLORS.red, label: "kritis" };
+      if (n >= 70) return { key: "orange", color: COLORS.orange, label: "waspada" };
+      return { key: "safe", color: COLORS.safe, label: "aman" };
+    }
+
+    function tempScore(celsius) {
+      if (celsius === null || celsius === undefined) return 0;
+      return pct((Number(celsius) / 90) * 100);
+    }
+
+    function field(object, ...names) {
+      for (const name of names) {
+        if (object && object[name] !== undefined && object[name] !== null) return object[name];
+      }
+      return 0;
+    }
+
+    function loadText(load) {
+      if (Array.isArray(load)) return load.map(one).join(" / ");
+      if (load && typeof load === "object") return [load.one, load.five, load.fifteen].map(one).join(" / ");
+      return load ? String(load) : "-";
+    }
+
+    function usedPercent(object) {
+      return field(object, "used_percent", "percent");
+    }
+
+    function totalBytes(object) {
+      return field(object, "total_bytes", "total");
+    }
+
+    function usedBytes(object) {
+      return field(object, "used_bytes", "used");
+    }
+
+    function freeBytes(object) {
+      return field(object, "available_bytes", "available", "free_bytes", "free");
+    }
+
+    function setMetric(prefix, percent, value, detail, badge) {
+      const tone = statusTone(percent);
+      $(`${prefix}Card`).style.setProperty("--status", tone.color);
+      $(`${prefix}Value`).textContent = value;
+      $(`${prefix}Detail`).textContent = detail;
+      $(`${prefix}Badge`).textContent = badge || tone.label;
+      $(`${prefix}Bar`).style.width = `${pct(percent)}%`;
+      $(`${prefix}Bar`).style.background = tone.color;
+    }
+
+    function diskText(disk) {
+      if (!disk) return "-";
+      return `${size(usedBytes(disk))} dipakai dari ${size(totalBytes(disk))} | sisa ${size(freeBytes(disk))}`;
+    }
+
+    function renderServices(services) {
+      const list = Array.isArray(services) ? services : [];
+      const active = list.filter((service) => service.active).length;
+      $("servicesCount").textContent = `${active} aktif`;
+      $("services").innerHTML = list.map((service) => `
+        <li class="service-item ${service.active ? "" : "off"}">
+          <span class="service-name mono truncate">${esc(service.name)}</span>
+          <span class="status-pill mono ${service.active ? "" : "red"}">${service.active ? "aktif" : "mati"}</span>
+        </li>
+      `).join("") || `<li class="muted mono">Tidak ada service yang dipantau.</li>`;
+    }
+
+    function renderDisks(disks) {
+      const list = Array.isArray(disks) ? disks : [];
+      $("disks").innerHTML = list.map((disk) => {
+        const used = pct(usedPercent(disk));
+        const tone = statusTone(used);
+        const mount = disk.mount || disk.path || "-";
+        const fstype = disk.fstype || "disk";
+        return `
+          <div class="progress-row">
+            <div class="progress-head">
+              <div class="progress-main">
+                <div class="mount-line">
+                  <strong class="mono mount-name">${esc(mount)}</strong>
+                  <span class="muted mono mount-meta">${esc(disk.filesystem)} (${esc(fstype)})</span>
+                </div>
+              </div>
+              <strong class="mono nowrap">${size(usedBytes(disk))} / ${size(totalBytes(disk))}</strong>
+            </div>
+            <div class="bar"><span style="width:${used}%; background:${tone.color}"></span></div>
+            <div class="progress-head mono">
+              <span class="muted">sisa ${size(freeBytes(disk))}</span>
+              <span style="color:${tone.color}; font-weight:800">${one(used)}% ${tone.label}</span>
+            </div>
+          </div>
+        `;
+      }).join("") || `<div class="muted mono">Data disk belum tersedia.</div>`;
+    }
+
+    function renderContainers(containers) {
+      const list = Array.isArray(containers) ? containers : [];
+      const running = list.filter((container) => String(container.status || "").toLowerCase().startsWith("up")).length;
+      $("containersCount").textContent = list.length ? `${running} running` : "tidak ada";
+      $("containers").innerHTML = list.map((container) => {
+        const up = String(container.status || "").toLowerCase().startsWith("up");
+        return `
+          <div class="mini-card ${up ? "" : "off"}">
+            <div class="mini-main">
+              <div class="mini-title mono truncate">${esc(container.name)}</div>
+              <p class="muted mono clamp">${esc(container.image)}</p>
+            </div>
+            <span class="status-pill mono ${up ? "" : "red"}">${up ? "Up" : "Stop"}</span>
+          </div>
+        `;
+      }).join("") || `<div class="muted mono">Tidak ada container berjalan.</div>`;
+    }
+
+    function renderProcesses(processes) {
+      const list = Array.isArray(processes) ? processes : [];
+      $("processRows").innerHTML = list.map((process) => `
+        <tr>
+          <td>
+            <div class="process-name mono">${esc(process.name)}</div>
+            <div class="process-command mono">${esc(process.command)}</div>
+          </td>
+          <td class="right mono nowrap"><strong>${size(field(process, "rss_bytes", "rss"))}</strong><br><span class="muted">${esc(field(process, "mem_percent", "memory"))}%</span></td>
+          <td class="right mono nowrap">${esc(field(process, "cpu_percent", "cpu"))}%</td>
+          <td class="right mono nowrap muted">${esc(process.pid)}</td>
+        </tr>
+      `).join("");
+
+      $("mobileProcesses").innerHTML = list.map((process) => `
+        <div class="mini-card">
+          <div class="mini-main">
+            <div class="mini-title mono truncate">${esc(process.name)}</div>
+            <p class="process-command mono">${esc(process.command)}</p>
+            <p class="muted mono clamp">RAM ${size(field(process, "rss_bytes", "rss"))} (${esc(field(process, "mem_percent", "memory"))}%) - CPU ${esc(field(process, "cpu_percent", "cpu"))}% - PID ${esc(process.pid)}</p>
+          </div>
+        </div>
+      `).join("") || `<div class="muted mono">Data proses belum tersedia.</div>`;
+    }
+
+    function updateOverall(data, rootDisk) {
+      const issues = [];
+      if (pct(data.cpu_percent) >= 70) issues.push("CPU tinggi");
+      if (pct(usedPercent(data.memory)) >= 70) issues.push("RAM tinggi");
+      if (rootDisk && pct(usedPercent(rootDisk)) >= 70) issues.push("Disk tinggi");
+      if (data.temperature_c !== null && tempScore(data.temperature_c) >= 70) issues.push("Suhu tinggi");
+      const inactive = (data.services || []).filter((service) => !service.active).map((service) => service.name);
+      if (inactive.length) issues.push(`Service mati: ${inactive.join(", ")}`);
+
+      const criticalDisk = rootDisk && pct(usedPercent(rootDisk)) >= 85;
+      const worst = inactive.length || criticalDisk ? "red" : issues.length ? "orange" : "safe";
+      const badge = $("overallBadge");
+      badge.className = `status-pill mono ${worst === "safe" ? "" : worst}`;
+      badge.textContent = worst === "safe" ? "baik" : worst === "orange" ? "waspada" : "kritis";
+      $("summaryNote").textContent = issues.length ? issues.join(" | ") : "Semua metrik utama normal";
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const rootDisk = (data.disks || []).find((disk) => (disk.mount || disk.path) === "/") || (data.disks || [])[0];
+        const root = data.disk || rootDisk;
+
+        $("hostnameTag").textContent = data.hostname || "-";
+        $("subtitle").textContent = `${data.hostname || "server"} - refresh otomatis 5 detik`;
+        $("updatedTime").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
+        $("summaryHost").textContent = data.hostname || "-";
+        $("summaryUptime").textContent = uptime(data.uptime_seconds);
+
+        setMetric("cpu", data.cpu_percent, one(data.cpu_percent), `load ${loadText(data.load)}`, `${data.cpu_cores || "-"} core`);
+        setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), `${size(usedBytes(data.memory))} dipakai dari ${size(totalBytes(data.memory))} | sisa ${size(freeBytes(data.memory))}`, `total ${size(totalBytes(data.memory))}`);
+        setMetric("disk", usedPercent(root), one(usedPercent(root)), diskText(root), root?.fstype || "root");
+        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${uptime(data.uptime_seconds)}`, "SoC");
+
+        const swapPercent = pct(usedPercent(data.swap));
+        const swapTone = statusTone(swapPercent);
+        $("swapLabel").textContent = `${one(swapPercent)}%`;
+        $("swapBar").style.width = `${swapPercent}%`;
+        $("swapBar").style.background = swapTone.color;
+        $("swapDetail").textContent = `${size(usedBytes(data.swap))} dipakai dari ${size(totalBytes(data.swap))} | sisa ${size(freeBytes(data.swap))}`;
+
+        updateOverall(data, root);
+        renderServices(data.services);
+        renderDisks(data.disks);
+        renderContainers(data.containers);
+        renderProcesses(data.processes);
+      } catch (error) {
+        $("subtitle").textContent = `Gagal memuat data: ${error.message}`;
+        $("updatedTime").textContent = "error";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

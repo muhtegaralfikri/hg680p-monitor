@@ -1,0 +1,12 @@
+[Unit]
+Description=Run HG680P Monitor auto-update
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=hg680p-monitor-update.service
+
+[Install]
+WantedBy=timers.target
+
