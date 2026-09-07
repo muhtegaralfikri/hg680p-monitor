@@ -542,6 +542,10 @@
       overflow-wrap: anywhere;
     }
 
+    .process-command-short {
+      display: none;
+    }
+
     .mobile-processes {
       display: none;
       gap: 10px;
@@ -747,6 +751,14 @@
         line-clamp: 1;
       }
 
+      .process-command-full {
+        display: none;
+      }
+
+      .process-command-short {
+        display: -webkit-box;
+      }
+
       .mobile-processes { display: none; }
       footer { text-align: left; }
     }
@@ -867,6 +879,10 @@
       redFill: "#f43f5e"
     };
 
+    function isMobile() {
+      return window.matchMedia("(max-width: 640px)").matches;
+    }
+
     function esc(value) {
       return String(value ?? "-").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;",
@@ -895,6 +911,14 @@
       return `${n} B`;
     }
 
+    function compactSize(bytes) {
+      const n = Number(bytes || 0);
+      if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)}G`;
+      if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(0)}M`;
+      if (n >= 1024) return `${(n / 1024).toFixed(0)}K`;
+      return `${n}B`;
+    }
+
     function uptime(seconds) {
       const total = Number(seconds || 0);
       const days = Math.floor(total / 86400);
@@ -903,6 +927,16 @@
       if (days > 0) return `${days} hari ${hours} jam`;
       if (hours > 0) return `${hours} jam ${minutes} menit`;
       return `${minutes} menit`;
+    }
+
+    function shortUptime(seconds) {
+      const total = Number(seconds || 0);
+      const days = Math.floor(total / 86400);
+      const hours = Math.floor((total % 86400) / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      if (days > 0) return `${days}h ${hours}j`;
+      if (hours > 0) return `${hours}j ${minutes}m`;
+      return `${minutes}m`;
     }
 
     function statusTone(value) {
@@ -971,6 +1005,20 @@
       return `${size(usedBytes(disk))} dipakai dari ${size(totalBytes(disk))} | sisa ${size(freeBytes(disk))}`;
     }
 
+    function metricText(used, total, free) {
+      if (isMobile()) return `${compactSize(used)} / ${compactSize(total)}`;
+      return `${size(used)} dipakai dari ${size(total)} | sisa ${size(free)}`;
+    }
+
+    function shortCommand(command) {
+      const text = String(command || "-")
+        .replace(/--token(=|\s+)\S+/g, "--token [redacted]")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (text.length <= 34) return text;
+      return `${text.slice(0, 31)}...`;
+    }
+
     function renderServices(services) {
       const list = Array.isArray(services) ? services : [];
       const active = list.filter((service) => service.active).length;
@@ -996,14 +1044,14 @@
               <div class="progress-main">
                 <div class="mount-line">
                   <strong class="mono mount-name">${esc(mount)}</strong>
-                  <span class="muted mono mount-meta">${esc(disk.filesystem)} (${esc(fstype)})</span>
+                  <span class="muted mono mount-meta">${esc(isMobile() ? fstype : `${disk.filesystem} (${fstype})`)}</span>
                 </div>
               </div>
-              <strong class="mono nowrap">${size(usedBytes(disk))} / ${size(totalBytes(disk))}</strong>
+              <strong class="mono nowrap">${isMobile() ? `${compactSize(usedBytes(disk))} / ${compactSize(totalBytes(disk))}` : `${size(usedBytes(disk))} / ${size(totalBytes(disk))}`}</strong>
             </div>
             <div class="bar"><span style="width:${used}%; background:${tone.color}"></span></div>
             <div class="progress-head mono">
-              <span class="muted">sisa ${size(freeBytes(disk))}</span>
+              <span class="muted">sisa ${isMobile() ? compactSize(freeBytes(disk)) : size(freeBytes(disk))}</span>
               <span style="color:${tone.color}; font-weight:800">${one(used)}% ${tone.label}</span>
             </div>
           </div>
@@ -1035,9 +1083,10 @@
         <tr>
           <td>
             <div class="process-name mono">${esc(process.name)}</div>
-            <div class="process-command mono">${esc(process.command)}</div>
+            <div class="process-command process-command-full mono">${esc(process.command)}</div>
+            <div class="process-command process-command-short mono">${esc(shortCommand(process.command))}</div>
           </td>
-          <td class="right mono nowrap"><strong>${size(field(process, "rss_bytes", "rss"))}</strong><br><span class="muted">${esc(field(process, "mem_percent", "memory"))}%</span></td>
+          <td class="right mono nowrap"><strong>${isMobile() ? compactSize(field(process, "rss_bytes", "rss")) : size(field(process, "rss_bytes", "rss"))}</strong><br><span class="muted">${esc(field(process, "mem_percent", "memory"))}%</span></td>
           <td class="right mono nowrap">${esc(field(process, "cpu_percent", "cpu"))}%</td>
           <td class="right mono nowrap muted">${esc(process.pid)}</td>
         </tr>
@@ -1047,8 +1096,8 @@
         <div class="mini-card">
           <div class="mini-main">
             <div class="mini-title mono truncate">${esc(process.name)}</div>
-            <p class="process-command mono">${esc(process.command)}</p>
-            <p class="muted mono clamp">RAM ${size(field(process, "rss_bytes", "rss"))} (${esc(field(process, "mem_percent", "memory"))}%) - CPU ${esc(field(process, "cpu_percent", "cpu"))}% - PID ${esc(process.pid)}</p>
+            <p class="process-command mono">${esc(shortCommand(process.command))}</p>
+            <p class="muted mono clamp">RAM ${compactSize(field(process, "rss_bytes", "rss"))} - CPU ${esc(field(process, "cpu_percent", "cpu"))}% - PID ${esc(process.pid)}</p>
           </div>
         </div>
       `).join("") || `<div class="muted mono">Data proses belum tersedia.</div>`;
@@ -1088,16 +1137,16 @@
         $("summaryUptime").textContent = uptime(data.uptime_seconds);
 
         setMetric("cpu", data.cpu_percent, one(data.cpu_percent), `load ${loadText(data.load)}`, `${data.cpu_cores || "-"} core`);
-        setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), `${size(usedBytes(data.memory))} dipakai dari ${size(totalBytes(data.memory))} | sisa ${size(freeBytes(data.memory))}`, `total ${size(totalBytes(data.memory))}`);
-        setMetric("disk", usedPercent(root), one(usedPercent(root)), diskText(root), root?.fstype || "root");
-        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${uptime(data.uptime_seconds)}`, "SoC", tempTone(data.temperature_c));
+        setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), metricText(usedBytes(data.memory), totalBytes(data.memory), freeBytes(data.memory)), `total ${isMobile() ? compactSize(totalBytes(data.memory)) : size(totalBytes(data.memory))}`);
+        setMetric("disk", usedPercent(root), one(usedPercent(root)), isMobile() && root ? `${compactSize(usedBytes(root))} / ${compactSize(totalBytes(root))}` : diskText(root), root?.fstype || "root");
+        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${isMobile() ? shortUptime(data.uptime_seconds) : uptime(data.uptime_seconds)}`, "SoC", tempTone(data.temperature_c));
 
         const swapPercent = pct(usedPercent(data.swap));
         const swapTone = statusTone(swapPercent);
         $("swapLabel").textContent = `${one(swapPercent)}%`;
         $("swapBar").style.width = `${swapPercent}%`;
         $("swapBar").style.background = swapTone.color;
-        $("swapDetail").textContent = `${size(usedBytes(data.swap))} dipakai dari ${size(totalBytes(data.swap))} | sisa ${size(freeBytes(data.swap))}`;
+        $("swapDetail").textContent = metricText(usedBytes(data.swap), totalBytes(data.swap), freeBytes(data.swap));
 
         updateOverall(data, root);
         renderServices(data.services);
@@ -1112,6 +1161,7 @@
 
     refresh();
     setInterval(refresh, 5000);
+    window.addEventListener("resize", refresh);
   </script>
 </body>
 </html>
