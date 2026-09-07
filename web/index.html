@@ -16,9 +16,13 @@
       --muted: #b7c8df;
       --faint: #7f95b2;
       --safe: #38bdf8;
-      --green: #22e58f;
-      --orange: #ffb020;
-      --red: #ff4d5e;
+      --safe-2: #06b6d4;
+      --green: #10b981;
+      --green-live: #22e58f;
+      --orange: #f59e0b;
+      --yellow: #facc15;
+      --red: #f43f5e;
+      --red-2: #ef4444;
       --shadow: 0 16px 42px rgba(0, 0, 0, .3);
       --radius: 12px;
     }
@@ -28,10 +32,7 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 14% 0%, rgba(56, 189, 248, .18), transparent 34%),
-        radial-gradient(circle at 86% 3%, rgba(34, 229, 143, .12), transparent 30%),
-        linear-gradient(180deg, #091629 0%, var(--bg) 44%, #070d18 100%);
+      background: var(--bg);
       color: var(--text);
       font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       font-size: 14px;
@@ -60,7 +61,7 @@
       padding: 16px 18px;
       border: 1px solid var(--line-soft);
       border-radius: var(--radius);
-      background: linear-gradient(135deg, rgba(20, 35, 62, .94), rgba(13, 24, 43, .9));
+      background: rgba(20, 35, 62, .94);
       box-shadow: var(--shadow);
     }
 
@@ -79,7 +80,7 @@
       flex: 0 0 auto;
       border-radius: 9px;
       border: 1px solid rgba(56, 189, 248, .36);
-      background: linear-gradient(135deg, rgba(56, 189, 248, .2), rgba(34, 229, 143, .12));
+      background: rgba(56, 189, 248, .18);
       color: #7dd3fc;
       font-weight: 800;
     }
@@ -164,13 +165,14 @@
     .card {
       border: 1px solid var(--line-soft);
       border-radius: var(--radius);
-      background: linear-gradient(180deg, rgba(17, 29, 51, .94), rgba(11, 22, 40, .92));
+      background: rgba(17, 29, 51, .94);
       box-shadow: 0 10px 28px rgba(0, 0, 0, .2), inset 0 1px 0 rgba(255, 255, 255, .035);
       overflow: hidden;
     }
 
     .metric {
       --status: var(--safe);
+      --status-fill: var(--safe);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -183,7 +185,7 @@
       display: block;
       height: 3px;
       margin: -16px -16px 14px;
-      background: var(--status);
+      background: var(--status-fill);
       opacity: 1;
       box-shadow: 0 0 18px color-mix(in srgb, var(--status) 70%, transparent);
     }
@@ -243,7 +245,7 @@
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: var(--status);
+      background: var(--status-fill);
       box-shadow: 0 0 16px color-mix(in srgb, var(--status) 64%, transparent);
       transition: width .25s ease, background-color .25s ease;
     }
@@ -418,7 +420,7 @@
       padding: 11px;
       border: 1px solid rgba(30, 41, 59, .65);
       border-radius: 9px;
-      background: linear-gradient(135deg, rgba(15, 30, 54, .82), rgba(9, 19, 36, .78));
+      background: rgba(15, 30, 54, .82);
     }
 
     .mini-main {
@@ -710,7 +712,14 @@
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const COLORS = { safe: "#3b82f6", orange: "#f59e0b", red: "#ef4444" };
+    const COLORS = {
+      safe: "#38bdf8",
+      safeFill: "#38bdf8",
+      orange: "#f59e0b",
+      orangeFill: "#f59e0b",
+      red: "#f43f5e",
+      redFill: "#f43f5e"
+    };
 
     function esc(value) {
       return String(value ?? "-").replace(/[&<>"']/g, (char) => ({
@@ -752,14 +761,22 @@
 
     function statusTone(value) {
       const n = pct(value);
-      if (n >= 85) return { key: "red", color: COLORS.red, label: "kritis" };
-      if (n >= 70) return { key: "orange", color: COLORS.orange, label: "waspada" };
-      return { key: "safe", color: COLORS.safe, label: "aman" };
+      if (n >= 80) return { key: "red", color: COLORS.red, fill: COLORS.redFill, label: "kritis" };
+      if (n >= 60) return { key: "orange", color: COLORS.orange, fill: COLORS.orangeFill, label: "waspada" };
+      return { key: "safe", color: COLORS.safe, fill: COLORS.safeFill, label: "aman" };
     }
 
     function tempScore(celsius) {
       if (celsius === null || celsius === undefined) return 0;
       return pct((Number(celsius) / 90) * 100);
+    }
+
+    function tempTone(celsius) {
+      if (celsius === null || celsius === undefined) return statusTone(0);
+      const n = Number(celsius);
+      if (n >= 75) return { key: "red", color: COLORS.red, fill: COLORS.redFill, label: "kritis" };
+      if (n >= 60) return { key: "orange", color: COLORS.orange, fill: COLORS.orangeFill, label: "waspada" };
+      return { key: "safe", color: COLORS.safe, fill: COLORS.safeFill, label: "normal" };
     }
 
     function field(object, ...names) {
@@ -791,14 +808,16 @@
       return field(object, "available_bytes", "available", "free_bytes", "free");
     }
 
-    function setMetric(prefix, percent, value, detail, badge) {
-      const tone = statusTone(percent);
+    function setMetric(prefix, percent, value, detail, badge, toneOverride) {
+      const tone = toneOverride || statusTone(percent);
       $(`${prefix}Card`).style.setProperty("--status", tone.color);
+      $(`${prefix}Card`).style.setProperty("--status-fill", tone.fill);
       $(`${prefix}Value`).textContent = value;
+      $(`${prefix}Value`).style.color = prefix === "temp" && tone.key === "safe" ? "#f8fafc" : tone.color;
       $(`${prefix}Detail`).textContent = detail;
       $(`${prefix}Badge`).textContent = badge || tone.label;
       $(`${prefix}Bar`).style.width = `${pct(percent)}%`;
-      $(`${prefix}Bar`).style.background = tone.color;
+      $(`${prefix}Bar`).style.background = tone.fill;
     }
 
     function diskText(disk) {
