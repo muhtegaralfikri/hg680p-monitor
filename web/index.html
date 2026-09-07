@@ -471,6 +471,24 @@
     .section { margin-top: 18px; }
     .table-wrap { overflow: hidden; }
 
+    .custom-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: #263a59 #0d1527;
+    }
+
+    .custom-scroll::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #0d1527;
+    }
+
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #263a59;
+      border-radius: 99px;
+    }
+
     table {
       width: 100%;
       table-layout: fixed;
@@ -546,26 +564,124 @@
 
     @media (max-width: 640px) {
       main {
-        width: min(100% - 20px, 1280px);
+        width: min(100% - 20px, 448px);
         padding-top: 12px;
       }
 
       .header {
-        align-items: stretch;
-        flex-direction: column;
-        padding: 14px;
+        align-items: flex-start;
+        flex-direction: row;
+        padding: 12px;
+        gap: 10px;
       }
 
-      h1 { font-size: 19px; }
-      .live-pill { width: 100%; }
-      .metrics { grid-template-columns: 1fr; }
-      .metric { min-height: 138px; }
-      .metric-value { font-size: 28px; }
-      .panel { padding: 15px; }
+      .brand {
+        gap: 8px;
+      }
+
+      .brand-mark {
+        width: auto;
+        height: 22px;
+        padding: 0 7px;
+        border-radius: 6px;
+        font-size: 10px;
+      }
+
+      h1 {
+        gap: 6px;
+        font-size: 16px;
+      }
+
+      .tag, .badge {
+        min-height: 18px;
+        padding: 1px 6px;
+        font-size: 10px;
+      }
+
+      #subtitle {
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .live-pill {
+        flex: 0 0 auto;
+        gap: 6px;
+        padding: 5px 8px;
+        font-size: 10px;
+      }
+
+      .live-dot {
+        width: 6px;
+        height: 6px;
+      }
+
+      .grid {
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric {
+        min-height: 118px;
+        padding: 12px;
+      }
+
+      .metric::before {
+        display: none;
+      }
+
+      .label {
+        font-size: 11px;
+      }
+
+      .metric-head .badge {
+        max-width: 52%;
+        font-size: 9px;
+      }
+
+      .metric-value {
+        margin-top: 7px;
+        font-size: 22px;
+      }
+
+      .metric-value small {
+        font-size: 12px;
+      }
+
+      .metric-detail {
+        min-height: 16px;
+        margin-top: 3px;
+        font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .bar {
+        height: 5px;
+        margin-top: 8px;
+      }
+
+      .panel {
+        padding: 12px;
+      }
 
       .panel-head {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-direction: row;
+        padding-bottom: 9px;
+      }
+
+      .title {
+        font-size: 12px;
+      }
+
+      .status-pill {
+        padding: 2px 8px;
+        font-size: 10px;
       }
 
       .row {
@@ -575,14 +691,14 @@
       }
 
       .progress-head {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 4px;
+        align-items: center;
+        flex-direction: row;
+        gap: 8px;
       }
 
       .mount-line {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: baseline;
+        flex-direction: row;
         gap: 2px;
       }
 
@@ -592,16 +708,46 @@
       }
 
       .mini-card {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-direction: row;
+        padding: 10px;
       }
 
       .mini-main {
         width: 100%;
       }
 
-      .table-wrap { display: none; }
-      .mobile-processes { display: grid; }
+      .section {
+        margin-top: 12px;
+      }
+
+      .table-wrap {
+        display: block;
+        margin: 0 -12px;
+        padding: 0 12px;
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 340px;
+        font-size: 11px;
+      }
+
+      th, td {
+        padding: 8px 8px;
+      }
+
+      th:nth-child(2), td:nth-child(2) { width: 82px; }
+      th:nth-child(3), td:nth-child(3) { width: 58px; }
+      th:nth-child(4), td:nth-child(4) { width: 66px; }
+
+      .process-command {
+        font-size: 9px;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+      }
+
+      .mobile-processes { display: none; }
       footer { text-align: left; }
     }
   </style>
@@ -696,7 +842,7 @@
 
     <section class="card section" aria-label="Proses paling berat">
       <div class="panel-head panel"><h2 class="title">Proses Paling Berat</h2><span class="muted mono">Top Resource Usage</span></div>
-      <div class="table-wrap">
+      <div class="table-wrap custom-scroll">
         <table>
           <thead>
             <tr><th>Proses</th><th class="right">RAM</th><th class="right">CPU</th><th class="right">PID</th></tr>
@@ -910,15 +1056,17 @@
 
     function updateOverall(data, rootDisk) {
       const issues = [];
-      if (pct(data.cpu_percent) >= 70) issues.push("CPU tinggi");
-      if (pct(usedPercent(data.memory)) >= 70) issues.push("RAM tinggi");
-      if (rootDisk && pct(usedPercent(rootDisk)) >= 70) issues.push("Disk tinggi");
-      if (data.temperature_c !== null && tempScore(data.temperature_c) >= 70) issues.push("Suhu tinggi");
+      if (pct(data.cpu_percent) >= 60) issues.push("CPU tinggi");
+      if (pct(usedPercent(data.memory)) >= 60) issues.push("RAM tinggi");
+      if (rootDisk && pct(usedPercent(rootDisk)) >= 60) issues.push("Disk tinggi");
+      if (data.temperature_c !== null && Number(data.temperature_c) >= 60) issues.push("Suhu tinggi");
       const inactive = (data.services || []).filter((service) => !service.active).map((service) => service.name);
       if (inactive.length) issues.push(`Service mati: ${inactive.join(", ")}`);
 
-      const criticalDisk = rootDisk && pct(usedPercent(rootDisk)) >= 85;
-      const worst = inactive.length || criticalDisk ? "red" : issues.length ? "orange" : "safe";
+      const criticalDisk = rootDisk && pct(usedPercent(rootDisk)) >= 80;
+      const criticalTemp = data.temperature_c !== null && Number(data.temperature_c) >= 75;
+      const criticalLoad = pct(data.cpu_percent) >= 80 || pct(usedPercent(data.memory)) >= 80;
+      const worst = inactive.length || criticalDisk || criticalTemp || criticalLoad ? "red" : issues.length ? "orange" : "safe";
       const badge = $("overallBadge");
       badge.className = `status-pill mono ${worst === "safe" ? "" : worst}`;
       badge.textContent = worst === "safe" ? "baik" : worst === "orange" ? "waspada" : "kritis";
@@ -942,7 +1090,7 @@
         setMetric("cpu", data.cpu_percent, one(data.cpu_percent), `load ${loadText(data.load)}`, `${data.cpu_cores || "-"} core`);
         setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), `${size(usedBytes(data.memory))} dipakai dari ${size(totalBytes(data.memory))} | sisa ${size(freeBytes(data.memory))}`, `total ${size(totalBytes(data.memory))}`);
         setMetric("disk", usedPercent(root), one(usedPercent(root)), diskText(root), root?.fstype || "root");
-        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${uptime(data.uptime_seconds)}`, "SoC");
+        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${uptime(data.uptime_seconds)}`, "SoC", tempTone(data.temperature_c));
 
         const swapPercent = pct(usedPercent(data.swap));
         const swapTone = statusTone(swapPercent);
