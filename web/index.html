@@ -1131,7 +1131,7 @@
         const root = data.disk || rootDisk;
 
         $("hostnameTag").textContent = data.hostname || "-";
-        $("subtitle").textContent = `${data.hostname || "server"} - refresh otomatis 5 detik`;
+        $("subtitle").textContent = isMobile() ? `${data.hostname || "server"} - 5d` : `${data.hostname || "server"} - refresh otomatis 5 detik`;
         $("updatedTime").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
         $("summaryHost").textContent = data.hostname || "-";
         $("summaryUptime").textContent = uptime(data.uptime_seconds);
