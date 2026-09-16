@@ -469,6 +469,73 @@
     }
 
     .section { margin-top: 18px; }
+
+    .chart-grid {
+      grid-template-columns: 1.3fr .7fr;
+      align-items: stretch;
+    }
+
+    .chart-wrap {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      width: 10px;
+      height: 3px;
+      border-radius: 99px;
+      background: currentColor;
+    }
+
+    .chart {
+      width: 100%;
+      height: 230px;
+      border: 1px solid rgba(30, 41, 59, .72);
+      border-radius: 9px;
+      background: #0a1424;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .detail-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px;
+      border: 1px solid rgba(30, 41, 59, .65);
+      border-radius: 9px;
+      background: rgba(15, 30, 54, .82);
+    }
+
+    .detail-card strong { color: #e2e8f0; }
+
     .table-wrap { overflow: hidden; }
 
     .custom-scroll {
@@ -564,6 +631,7 @@
     @media (max-width: 980px) {
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .details { grid-template-columns: 1fr; }
+      .chart-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 640px) {
@@ -725,6 +793,20 @@
         margin-top: 12px;
       }
 
+      .chart-wrap,
+      .detail-grid {
+        padding: 12px;
+      }
+
+      .chart-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .chart {
+        height: 190px;
+      }
+
       .table-wrap {
         display: block;
         margin: 0 -12px;
@@ -821,6 +903,31 @@
       </article>
     </section>
 
+    <section class="grid chart-grid" aria-label="Grafik server">
+      <article class="card chart-wrap">
+        <div class="chart-head">
+          <h2 class="title">Grafik 5 Menit</h2>
+          <div class="legend mono">
+            <span style="color:#38bdf8"><i></i>CPU</span>
+            <span style="color:#22c55e"><i></i>RAM</span>
+            <span style="color:#facc15"><i></i>Disk</span>
+            <span style="color:#f43f5e"><i></i>Suhu</span>
+          </div>
+        </div>
+        <canvas class="chart" id="mainChart" width="900" height="260"></canvas>
+      </article>
+
+      <article class="card detail-grid">
+        <div class="panel-head"><h2 class="title">Detail Cepat</h2><span class="muted mono">Live</span></div>
+        <div class="detail-card"><span class="muted">Load 1/5/15</span><strong class="mono" id="detailLoad">-</strong></div>
+        <div class="detail-card"><span class="muted">RAM tersedia</span><strong class="mono" id="detailRamFree">-</strong></div>
+        <div class="detail-card"><span class="muted">Root tersisa</span><strong class="mono" id="detailDiskFree">-</strong></div>
+        <div class="detail-card"><span class="muted">Service aktif</span><strong class="mono" id="detailServices">-</strong></div>
+        <div class="detail-card"><span class="muted">Container aktif</span><strong class="mono" id="detailContainers">-</strong></div>
+        <div class="detail-card"><span class="muted">Top proses</span><strong class="mono truncate" id="detailTopProcess">-</strong></div>
+      </article>
+    </section>
+
     <section class="grid details" aria-label="Detail server">
       <article class="card panel">
         <div class="panel-head"><h2 class="title">Ringkasan Server</h2><span class="status-pill mono" id="overallBadge">baik</span></div>
@@ -878,6 +985,7 @@
       red: "#f43f5e",
       redFill: "#f43f5e"
     };
+    const history = [];
 
     function isMobile() {
       return window.matchMedia("(max-width: 640px)").matches;
@@ -1008,6 +1116,56 @@
     function metricText(used, total, free) {
       if (isMobile()) return `${compactSize(used)} / ${compactSize(total)}`;
       return `${size(used)} dipakai dari ${size(total)} | sisa ${size(free)}`;
+    }
+
+    function pushHistory(data, root) {
+      history.push({
+        cpu: pct(data.cpu_percent),
+        ram: pct(usedPercent(data.memory)),
+        disk: pct(usedPercent(root)),
+        temp: tempScore(data.temperature_c),
+      });
+      if (history.length > 60) history.shift();
+    }
+
+    function drawLine(ctx, points, color, width, height) {
+      if (points.length < 2) return;
+      ctx.beginPath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = color;
+      points.forEach((value, index) => {
+        const x = (index / Math.max(1, points.length - 1)) * width;
+        const y = height - (pct(value) / 100) * height;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
+
+    function renderChart() {
+      const canvas = $("mainChart");
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+      const ctx = canvas.getContext("2d");
+      ctx.scale(ratio, ratio);
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(148, 163, 184, .16)";
+      ctx.lineWidth = 1;
+      [25, 50, 75].forEach((mark) => {
+        const y = h - (mark / 100) * h;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      });
+      drawLine(ctx, history.map((x) => x.cpu), "#38bdf8", w, h);
+      drawLine(ctx, history.map((x) => x.ram), "#22c55e", w, h);
+      drawLine(ctx, history.map((x) => x.disk), "#facc15", w, h);
+      drawLine(ctx, history.map((x) => x.temp), "#f43f5e", w, h);
     }
 
     function shortCommand(command) {
@@ -1148,7 +1306,16 @@
         $("swapBar").style.background = swapTone.color;
         $("swapDetail").textContent = metricText(usedBytes(data.swap), totalBytes(data.swap), freeBytes(data.swap));
 
+        $("detailLoad").textContent = loadText(data.load);
+        $("detailRamFree").textContent = size(freeBytes(data.memory));
+        $("detailDiskFree").textContent = root ? size(freeBytes(root)) : "-";
+        $("detailServices").textContent = `${(data.services || []).filter((service) => service.active).length}/${(data.services || []).length}`;
+        $("detailContainers").textContent = `${(data.containers || []).filter((container) => String(container.status || "").toLowerCase().startsWith("up")).length}/${(data.containers || []).length}`;
+        $("detailTopProcess").textContent = data.processes?.[0]?.name || "-";
+
         updateOverall(data, root);
+        pushHistory(data, root);
+        renderChart();
         renderServices(data.services);
         renderDisks(data.disks);
         renderContainers(data.containers);
@@ -1161,7 +1328,7 @@
 
     refresh();
     setInterval(refresh, 5000);
-    window.addEventListener("resize", refresh);
+    window.addEventListener("resize", renderChart);
   </script>
 </body>
 </html>
