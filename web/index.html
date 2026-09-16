@@ -8,7 +8,6 @@
     :root {
       color-scheme: dark;
       --bg: #111418;
-      --side: #191c20;
       --panel: #161b22;
       --panel-2: #1d2024;
       --panel-3: #21262d;
@@ -22,7 +21,6 @@
       --yellow: #e3b341;
       --red: #f85149;
       --radius: 6px;
-      --sidebar: 208px;
     }
 
     * { box-sizing: border-box; }
@@ -65,28 +63,15 @@
       -webkit-box-orient: vertical;
     }
 
-    .sidebar {
-      position: fixed;
-      inset: 0 auto 0 0;
-      z-index: 20;
-      display: flex;
-      width: var(--sidebar);
-      flex-direction: column;
-      border-right: 1px solid var(--line);
-      background: var(--side);
-    }
-
-    .side-brand,
     .topbar {
       height: 56px;
       border-bottom: 1px solid var(--line);
     }
 
-    .side-brand {
+    .brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 0 14px;
       font-size: 14px;
       font-weight: 650;
     }
@@ -103,41 +88,8 @@
       line-height: 1;
     }
 
-    .nav-label {
-      padding: 18px 12px 8px;
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .nav-link {
-      display: block;
-      margin: 0 6px;
-      padding: 8px 12px;
-      border-left: 2px solid transparent;
-      border-radius: 3px;
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    .nav-link.active {
-      border-left-color: var(--blue-2);
-      background: #323539;
-      font-weight: 650;
-    }
-
-    .side-foot {
-      margin-top: auto;
-      padding: 14px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 11px;
-    }
-
     .app {
       min-height: 100vh;
-      padding-left: var(--sidebar);
     }
 
     .topbar {
@@ -152,7 +104,6 @@
       background: rgba(25, 28, 32, .98);
     }
 
-    .mobile-brand { display: none; }
     .top-actions {
       display: flex;
       align-items: center;
@@ -381,11 +332,13 @@
 
     .chart {
       width: 100%;
-      height: 220px;
+      height: 252px;
       margin-top: 12px;
       border: 1px solid var(--line);
       border-radius: 4px;
-      background: #0b0e12;
+      background:
+        linear-gradient(180deg, rgba(88, 166, 255, .08), rgba(11, 14, 18, 0) 38%),
+        #0b0e12;
     }
 
     .detail-grid {
@@ -563,15 +516,6 @@
     }
 
     @media (max-width: 980px) {
-      :root { --sidebar: 0px; }
-      .sidebar { display: none; }
-      .app { padding-left: 0; }
-      .mobile-brand {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 650;
-      }
       .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .chart-grid,
       .details { grid-template-columns: 1fr; }
@@ -607,7 +551,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
       }
-      .chart { height: 188px; }
+      .chart { height: 220px; }
       .panel, .chart-wrap, .detail-grid { padding: 10px; }
       .panel-head { padding-bottom: 8px; }
       .legend { gap: 6px 8px; }
@@ -634,19 +578,9 @@
   </style>
 </head>
 <body>
-  <aside class="sidebar" aria-label="Navigasi">
-    <div class="side-brand"><span class="terminal-icon mono">&gt;_</span><span>Server Monitor</span></div>
-    <div class="nav-label mono">Navigation</div>
-    <nav>
-      <a class="nav-link active" href="#">Dashboard</a>
-      <a class="nav-link" href="#processes">Processes</a>
-    </nav>
-    <div class="side-foot mono"><span class="live-dot"></span> <span id="sideStatus">menunggu data</span></div>
-  </aside>
-
   <div class="app">
     <header class="topbar">
-      <div class="mobile-brand"><span class="terminal-icon mono">&gt;_</span><span>Server Monitor</span></div>
+      <div class="brand"><span class="terminal-icon mono">&gt;_</span><span>Server Monitor</span></div>
       <div class="top-actions">
         <span class="status-chip mono" id="topStatus">All Systems Operational</span>
         <span class="live-pill mono"><span>Updated</span><strong id="updatedTime">-</strong></span>
@@ -923,18 +857,47 @@
       if (history.length > 60) history.shift();
     }
 
-    function drawLine(ctx, points, color, width, height) {
+    function chartPoints(values, x, y, width, height) {
+      return values.map((value, index) => ({
+        x: x + (index / Math.max(1, values.length - 1)) * width,
+        y: y + height - (pct(value) / 100) * height
+      }));
+    }
+
+    function drawSmoothPath(ctx, points) {
       if (points.length < 2) return;
       ctx.beginPath();
-      ctx.lineWidth = 1.75;
-      ctx.strokeStyle = color;
-      points.forEach((value, index) => {
-        const x = (index / Math.max(1, points.length - 1)) * width;
-        const y = height - (pct(value) / 100) * height;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+      ctx.moveTo(points[0].x, points[0].y);
+      points.slice(1).forEach((point, index) => {
+        const prev = points[index];
+        const midX = (prev.x + point.x) / 2;
+        ctx.bezierCurveTo(midX, prev.y, midX, point.y, point.x, point.y);
       });
+    }
+
+    function drawSeries(ctx, values, color, areaColor, bounds) {
+      const points = chartPoints(values, bounds.x, bounds.y, bounds.w, bounds.h);
+      if (points.length < 2) return;
+      drawSmoothPath(ctx, points);
+      ctx.lineTo(bounds.x + bounds.w, bounds.y + bounds.h);
+      ctx.lineTo(bounds.x, bounds.y + bounds.h);
+      ctx.closePath();
+      const fill = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.h);
+      fill.addColorStop(0, areaColor);
+      fill.addColorStop(1, "rgba(11, 14, 18, 0)");
+      ctx.fillStyle = fill;
+      ctx.fill();
+
+      drawSmoothPath(ctx, points);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = color;
       ctx.stroke();
+
+      const last = points[points.length - 1];
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     function renderChart() {
@@ -947,22 +910,45 @@
       ctx.scale(ratio, ratio);
       const w = rect.width;
       const h = rect.height;
+      const bounds = { x: 42, y: 18, w: Math.max(1, w - 56), h: Math.max(1, h - 44) };
       ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = "rgba(139, 148, 158, .18)";
+      ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
+      ctx.fillStyle = "rgba(139, 148, 158, .9)";
+      ctx.strokeStyle = "rgba(139, 148, 158, .15)";
       ctx.lineWidth = 1;
-      [25, 50, 75].forEach((mark) => {
-        const y = h - (mark / 100) * h;
+
+      [0, 25, 50, 75, 100].forEach((mark) => {
+        const y = bounds.y + bounds.h - (mark / 100) * bounds.h;
         ctx.beginPath();
-        ctx.setLineDash([2, 4]);
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
+        ctx.setLineDash(mark === 0 ? [] : [2, 5]);
+        ctx.moveTo(bounds.x, y);
+        ctx.lineTo(bounds.x + bounds.w, y);
         ctx.stroke();
+        ctx.fillText(`${mark}`, 10, y + 4);
       });
+
+      ctx.setLineDash([2, 7]);
+      for (let i = 0; i <= 6; i += 1) {
+        const x = bounds.x + (i / 6) * bounds.w;
+        ctx.beginPath();
+        ctx.moveTo(x, bounds.y);
+        ctx.lineTo(x, bounds.y + bounds.h);
+        ctx.stroke();
+      }
+
       ctx.setLineDash([]);
-      drawLine(ctx, history.map((x) => x.cpu), "#58a6ff", w, h);
-      drawLine(ctx, history.map((x) => x.ram), "#a371f7", w, h);
-      drawLine(ctx, history.map((x) => x.disk), "#e3b341", w, h);
-      drawLine(ctx, history.map((x) => x.temp), "#f85149", w, h);
+      ctx.strokeStyle = "rgba(230, 237, 243, .25)";
+      ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
+      ctx.fillStyle = "rgba(139, 148, 158, .8)";
+      ["-5m", "-4m", "-3m", "-2m", "-1m", "now"].forEach((label, index) => {
+        const x = bounds.x + (index / 5) * bounds.w;
+        ctx.fillText(label, index === 5 ? x - 22 : x - 9, bounds.y + bounds.h + 20);
+      });
+
+      drawSeries(ctx, history.map((x) => x.disk), "#e3b341", "rgba(227, 179, 65, .08)", bounds);
+      drawSeries(ctx, history.map((x) => x.temp), "#f85149", "rgba(248, 81, 73, .07)", bounds);
+      drawSeries(ctx, history.map((x) => x.ram), "#a371f7", "rgba(163, 113, 247, .12)", bounds);
+      drawSeries(ctx, history.map((x) => x.cpu), "#58a6ff", "rgba(88, 166, 255, .16)", bounds);
     }
 
     function shortCommand(command) {
@@ -1078,7 +1064,6 @@
 
         $("hostnameTag").textContent = data.hostname || "-";
         $("subtitle").textContent = `${data.hostname || "server"} - refresh otomatis 5 detik`;
-        $("sideStatus").textContent = `${data.hostname || "server"} - running`;
         $("updatedTime").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
         $("summaryHost").textContent = data.hostname || "-";
         $("summaryUptime").textContent = uptime(data.uptime_seconds);
@@ -1114,7 +1099,6 @@
         $("updatedTime").textContent = "error";
         $("topStatus").className = "status-chip mono red";
         $("topStatus").textContent = "Telemetry Offline";
-        $("sideStatus").textContent = "telemetry offline";
       }
     }
 
