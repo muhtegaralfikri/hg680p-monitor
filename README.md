@@ -15,7 +15,7 @@ Dashboard monitoring server ringan untuk STB/HG680P.
 - `/api/status` data JSON
 - `/health` health check
 
-## Build
+## Build Lokal
 
 ```bash
 cargo build --release
@@ -38,22 +38,6 @@ Di browser:
 ```text
 http://127.0.0.1:8099
 ```
-
-## Deploy Manual ke Server
-
-```bash
-mkdir -p /opt/hg680p-monitor
-cp target/release/hg680p-monitor /opt/hg680p-monitor/
-cp deploy/hg680p-monitor.service /etc/systemd/system/
-cp deploy/nginx-hg680p-monitor.conf /etc/nginx/sites-available/hg680p-monitor.conf
-ln -s /etc/nginx/sites-available/hg680p-monitor.conf /etc/nginx/sites-enabled/hg680p-monitor.conf
-nginx -t
-systemctl daemon-reload
-systemctl enable --now hg680p-monitor
-systemctl reload nginx
-```
-
-Default service bind ke `127.0.0.1:18099`. Untuk akses lewat LAN, pakai Nginx reverse proxy di port `8099`.
 
 ## Auto Deploy dari GitHub
 
@@ -94,6 +78,14 @@ Pantau update:
 systemctl status hg680p-monitor-update.timer
 journalctl -u hg680p-monitor-update.service -n 80 --no-pager
 ```
+
+Update manual tanpa build di server:
+
+```bash
+bash deploy/pull-update.sh
+```
+
+Server tidak perlu `cargo`/`rustc`. Semua build berat dikerjakan GitHub Actions.
 
 ## Catatan Nginx
 
