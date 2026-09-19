@@ -17,18 +17,12 @@ Dashboard monitoring server ringan untuk STB/HG680P.
 
 ## Website Monitor
 
-Default website yang dipantau:
+Website dipantau otomatis dari:
 
-```text
-8082 Arjuna Multimedia
-8083 Portofolio Tegar
-8085 Revenue Bosowa CI
-8086 BengkelFlow
-8099 HG680P Monitor
-3002 Inventory Web
-```
+- Nginx aktif di `/etc/nginx/sites-enabled`
+- Port Docker yang dipublish ke host
 
-Override lewat env:
+Override manual tetap bisa lewat env:
 
 ```bash
 MONITOR_WEBSITES="Nama=http://127.0.0.1:8080/,App=http://127.0.0.1:3000/"

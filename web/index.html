@@ -6,7 +6,7 @@
   <title>HG680P Monitor</title>
   <style>
     :root {
-      color-scheme: dark;
+      color-scheme: light dark;
       --bg: #111418;
       --panel: #161b22;
       --panel-2: #1d2024;
@@ -20,7 +20,36 @@
       --green: #3fb950;
       --yellow: #e3b341;
       --red: #f85149;
+      --topbar: rgba(25, 28, 32, .98);
+      --live: #0f1216;
+      --bar-bg: #30363d;
+      --chart-bg: #0b0e12;
+      --chart-grid: rgba(139, 148, 158, .15);
+      --chart-border: rgba(230, 237, 243, .25);
       --radius: 6px;
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f6f8fa;
+      --panel: #ffffff;
+      --panel-2: #f0f3f6;
+      --panel-3: #eaeef2;
+      --line: #d0d7de;
+      --text: #24292f;
+      --muted: #57606a;
+      --faint: #6e7781;
+      --blue: #0969da;
+      --blue-2: #0550ae;
+      --green: #1a7f37;
+      --yellow: #9a6700;
+      --red: #cf222e;
+      --topbar: rgba(255, 255, 255, .96);
+      --live: #ffffff;
+      --bar-bg: #d8dee4;
+      --chart-bg: #ffffff;
+      --chart-grid: rgba(87, 96, 106, .18);
+      --chart-border: rgba(36, 41, 47, .22);
     }
 
     * { box-sizing: border-box; }
@@ -101,7 +130,7 @@
       justify-content: space-between;
       gap: 12px;
       padding: 0 24px;
-      background: rgba(25, 28, 32, .98);
+      background: var(--topbar);
     }
 
     .top-actions {
@@ -154,8 +183,21 @@
 
     .live-pill {
       color: var(--text);
-      background: #0f1216;
+      background: var(--live);
       font-size: 12px;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
     }
 
     .live-dot { color: var(--green); }
@@ -268,7 +310,7 @@
       margin-top: 9px;
       overflow: hidden;
       border-radius: 3px;
-      background: #30363d;
+      background: var(--bar-bg);
     }
 
     .bar > span {
@@ -338,7 +380,21 @@
       border-radius: 4px;
       background:
         linear-gradient(180deg, rgba(88, 166, 255, .08), rgba(11, 14, 18, 0) 38%),
-        #0b0e12;
+        var(--chart-bg);
+    }
+
+    .web-chart {
+      width: 120px;
+      height: 24px;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      background: var(--chart-bg);
+    }
+
+    .service-url {
+      flex: 1 1 140px;
+      min-width: 80px;
     }
 
     .detail-grid {
@@ -471,7 +527,7 @@
 
     th {
       height: 32px;
-      background: #111418;
+      background: var(--bg);
       color: var(--muted);
       font-size: 11px;
       font-weight: 500;
@@ -489,7 +545,7 @@
     th:nth-child(2), td:nth-child(2) { width: 110px; }
     th:nth-child(3), td:nth-child(3) { width: 82px; }
     th:nth-child(4), td:nth-child(4) { width: 90px; }
-    tbody tr:nth-child(even) { background: #13171d; }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--panel-2) 45%, transparent); }
     tbody tr:hover { background: var(--panel-3); }
 
     .process-name {
@@ -560,6 +616,8 @@
         flex-direction: column;
         gap: 3px;
       }
+      .service-item { flex-wrap: wrap; }
+      .web-chart { width: 96px; }
       .mount-line { display: block; }
       .mount-meta {
         display: block;
@@ -584,6 +642,7 @@
       <div class="top-actions">
         <span class="status-chip mono" id="topStatus">All Systems Operational</span>
         <span class="live-pill mono"><span>Updated</span><strong id="updatedTime">-</strong></span>
+        <button class="icon-button mono" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">◐</button>
       </div>
     </header>
 
@@ -722,6 +781,30 @@
       redFill: "#f85149"
     };
     const history = [];
+    const webHistory = new Map();
+    let latestWebsites = [];
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem("monitor-theme", theme);
+      $("themeToggle").textContent = theme === "light" ? "D" : "L";
+      $("themeToggle").title = theme === "light" ? "Mode gelap" : "Mode terang";
+      renderChart();
+      drawWebCharts(latestWebsites);
+    }
+
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem("monitor-theme");
+      const theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      applyTheme(theme);
+      $("themeToggle").addEventListener("click", () => {
+        applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+      });
+    }
 
     function isMobile() {
       return window.matchMedia("(max-width: 640px)").matches;
@@ -863,6 +946,16 @@
       if (history.length > 60) history.shift();
     }
 
+    function pushWebHistory(websites) {
+      (Array.isArray(websites) ? websites : []).forEach((site) => {
+        const key = site.url || site.name;
+        const rows = webHistory.get(key) || [];
+        rows.push(site.ok ? 1 : 0);
+        if (rows.length > 30) rows.shift();
+        webHistory.set(key, rows);
+      });
+    }
+
     function chartPoints(values, x, y, width, height) {
       return values.map((value, index) => ({
         x: x + (index / Math.max(1, values.length - 1)) * width,
@@ -919,8 +1012,8 @@
       const bounds = { x: 42, y: 18, w: Math.max(1, w - 56), h: Math.max(1, h - 44) };
       ctx.clearRect(0, 0, w, h);
       ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
-      ctx.fillStyle = "rgba(139, 148, 158, .9)";
-      ctx.strokeStyle = "rgba(139, 148, 158, .15)";
+      ctx.fillStyle = cssVar("--muted");
+      ctx.strokeStyle = cssVar("--chart-grid");
       ctx.lineWidth = 1;
 
       [0, 25, 50, 75, 100].forEach((mark) => {
@@ -943,9 +1036,9 @@
       }
 
       ctx.setLineDash([]);
-      ctx.strokeStyle = "rgba(230, 237, 243, .25)";
+      ctx.strokeStyle = cssVar("--chart-border");
       ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
-      ctx.fillStyle = "rgba(139, 148, 158, .8)";
+      ctx.fillStyle = cssVar("--muted");
       ["-5m", "-4m", "-3m", "-2m", "-1m", "now"].forEach((label, index) => {
         const x = bounds.x + (index / 5) * bounds.w;
         ctx.fillText(label, index === 5 ? x - 22 : x - 9, bounds.y + bounds.h + 20);
@@ -1024,15 +1117,38 @@
 
     function renderWebsites(websites) {
       const list = Array.isArray(websites) ? websites : [];
+      latestWebsites = list;
       const up = list.filter((site) => site.ok).length;
       $("websitesCount").textContent = list.length ? `${up} / ${list.length} HTTP ok` : "none";
-      $("websites").innerHTML = list.map((site) => `
+      $("websites").innerHTML = list.map((site, index) => `
         <li class="service-item ${site.ok ? "" : "off"}">
           <span class="service-name mono truncate">${esc(site.name)}</span>
-          <span class="muted mono truncate">${esc(site.url)}</span>
+          <span class="service-url muted mono truncate">${esc(site.url)}</span>
+          <canvas class="web-chart" id="webChart${index}" width="120" height="24" aria-hidden="true"></canvas>
           <span class="status-pill mono ${site.ok ? "" : "red"}">${site.status || "down"}</span>
         </li>
       `).join("") || `<li class="muted mono">Tidak ada website yang dipantau.</li>`;
+      drawWebCharts(list);
+    }
+
+    function drawWebCharts(websites) {
+      (Array.isArray(websites) ? websites : []).forEach((site, index) => {
+        const canvas = $(`webChart${index}`);
+        if (!canvas) return;
+        const rows = webHistory.get(site.url || site.name) || [];
+        const ctx = canvas.getContext("2d");
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = cssVar("--chart-bg");
+        ctx.fillRect(0, 0, w, h);
+        const gap = 2;
+        const bar = Math.max(2, Math.floor((w - gap * 29) / 30));
+        rows.slice(-30).forEach((ok, i) => {
+          ctx.fillStyle = ok ? cssVar("--green") : cssVar("--red");
+          ctx.fillRect(i * (bar + gap), ok ? 6 : 3, bar, ok ? 12 : 18);
+        });
+      });
     }
 
     function renderProcesses(processes) {
@@ -1111,6 +1227,7 @@
 
         updateOverall(data, root);
         pushHistory(data, root);
+        pushWebHistory(data.websites);
         renderChart();
         renderServices(data.services);
         renderDisks(data.disks);
@@ -1125,9 +1242,13 @@
       }
     }
 
+    initTheme();
     refresh();
     setInterval(refresh, 5000);
-    window.addEventListener("resize", renderChart);
+    window.addEventListener("resize", () => {
+      renderChart();
+      drawWebCharts(latestWebsites);
+    });
   </script>
 </body>
 </html>

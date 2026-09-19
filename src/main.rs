@@ -450,18 +450,9 @@ fn read_containers() -> Vec<ContainerInfo> {
 }
 
 fn read_websites() -> Vec<WebsiteInfo> {
-    let default = [
-        "Arjuna Multimedia=http://127.0.0.1:8082/",
-        "Portofolio Tegar=http://127.0.0.1:8083/",
-        "Revenue Bosowa CI=http://127.0.0.1:8085/",
-        "BengkelFlow=http://127.0.0.1:8086/",
-        "HG680P Monitor=http://127.0.0.1:8099/health",
-        "Inventory Web=http://127.0.0.1:3002/",
-    ]
-    .join(",");
-    let items = env::var("MONITOR_WEBSITES").unwrap_or(default);
+    let items = env::var("MONITOR_WEBSITES").unwrap_or_else(|_| discover_websites().join(","));
 
-    items
+    let mut websites = items
         .split(',')
         .filter_map(|item| {
             let (name, url) = item.split_once('=')?;
@@ -473,7 +464,83 @@ fn read_websites() -> Vec<WebsiteInfo> {
                 ok: (200..400).contains(&status),
             })
         })
-        .collect()
+        .collect::<Vec<_>>();
+
+    websites.sort_by(|a, b| a.url.cmp(&b.url));
+    websites.dedup_by(|a, b| a.url == b.url);
+    websites
+}
+
+fn discover_websites() -> Vec<String> {
+    let mut items = Vec::new();
+    discover_nginx_sites(&mut items);
+    discover_docker_ports(&mut items);
+    items
+}
+
+fn discover_nginx_sites(items: &mut Vec<String>) {
+    let entries = match fs::read_dir("/etc/nginx/sites-enabled") {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let content = fs::read_to_string(&path).unwrap_or_default();
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("nginx")
+            .trim_end_matches(".conf")
+            .to_string();
+
+        for line in content.lines() {
+            let line = line.trim();
+            if !line.starts_with("listen ") || line.contains("[::]") {
+                continue;
+            }
+            if let Some(port) = line
+                .trim_start_matches("listen ")
+                .split_whitespace()
+                .next()
+                .and_then(|value| value.trim_end_matches(';').parse::<u16>().ok())
+            {
+                items.push(format!("{}=http://127.0.0.1:{}/", name, port));
+            }
+        }
+    }
+}
+
+fn discover_docker_ports(items: &mut Vec<String>) {
+    let output = Command::new("docker")
+        .args(["ps", "--format", "{{.Names}}|{{.Ports}}"])
+        .output();
+
+    let stdout = match output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8(output.stdout).unwrap_or_default()
+        }
+        _ => return,
+    };
+
+    for line in stdout.lines() {
+        let Some((name, ports)) = line.split_once('|') else {
+            continue;
+        };
+        for part in ports.split(',') {
+            let Some(port) = part
+                .split("->")
+                .next()
+                .and_then(|left| left.rsplit(':').next())
+                .and_then(|value| value.parse::<u16>().ok())
+            else {
+                continue;
+            };
+            if port != 80 && port != 443 && port != 5432 && port != 6379 {
+                items.push(format!("{}=http://127.0.0.1:{}/", name, port));
+            }
+        }
+    }
 }
 
 fn http_status(url: &str) -> Option<u16> {
