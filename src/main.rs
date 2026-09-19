@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 static INDEX_HTML: &str = include_str!("../web/index.html");
 
@@ -44,6 +45,13 @@ struct ContainerInfo {
     name: String,
     image: String,
     status: String,
+}
+
+struct WebsiteInfo {
+    name: String,
+    url: String,
+    status: u16,
+    ok: bool,
 }
 
 #[derive(Default)]
@@ -139,15 +147,20 @@ fn build_status_json(state: Arc<Mutex<AppState>>) -> String {
     let load = read_loadavg();
     let mem = read_meminfo();
     let disks = read_disks();
-    let root_disk = disks.iter().find(|disk| disk.path == "/").cloned().unwrap_or_default();
+    let root_disk = disks
+        .iter()
+        .find(|disk| disk.path == "/")
+        .cloned()
+        .unwrap_or_default();
     let uptime = read_uptime_seconds();
     let temperature = read_temperature_c();
     let services = read_services();
     let containers = read_containers();
+    let websites = read_websites();
     let processes = read_top_processes();
 
     format!(
-        "{{\"hostname\":\"{}\",\"uptime_seconds\":{},\"cpu_percent\":{},\"load\":{{\"one\":{},\"five\":{},\"fifteen\":{}}},\"temperature_c\":{},\"memory\":{{\"total\":{},\"used\":{},\"available\":{},\"percent\":{}}},\"swap\":{{\"total\":{},\"used\":{},\"free\":{},\"percent\":{}}},\"disk\":{{\"path\":\"/\",\"filesystem\":\"{}\",\"total\":{},\"used\":{},\"free\":{},\"percent\":{}}},\"disks\":[{}],\"services\":[{}],\"containers\":[{}],\"processes\":[{}]}}",
+        "{{\"hostname\":\"{}\",\"uptime_seconds\":{},\"cpu_percent\":{},\"load\":{{\"one\":{},\"five\":{},\"fifteen\":{}}},\"temperature_c\":{},\"memory\":{{\"total\":{},\"used\":{},\"available\":{},\"percent\":{}}},\"swap\":{{\"total\":{},\"used\":{},\"free\":{},\"percent\":{}}},\"disk\":{{\"path\":\"/\",\"filesystem\":\"{}\",\"total\":{},\"used\":{},\"free\":{},\"percent\":{}}},\"disks\":[{}],\"services\":[{}],\"containers\":[{}],\"websites\":[{}],\"processes\":[{}]}}",
         json_escape(&hostname()),
         uptime,
         fmt_f64(cpu),
@@ -197,6 +210,17 @@ fn build_status_json(state: Arc<Mutex<AppState>>) -> String {
             .collect::<Vec<_>>()
             .join(",")
         ,
+        websites
+            .iter()
+            .map(|w| format!(
+                "{{\"name\":\"{}\",\"url\":\"{}\",\"status\":{},\"ok\":{}}}",
+                json_escape(&w.name),
+                json_escape(&w.url),
+                w.status,
+                w.ok
+            ))
+            .collect::<Vec<_>>()
+            .join(","),
         processes
             .iter()
             .map(|p| format!(
@@ -265,7 +289,11 @@ fn read_meminfo() -> MemInfo {
     for line in content.lines() {
         let mut parts = line.split_whitespace();
         let key = parts.next().unwrap_or("").trim_end_matches(':');
-        let value = parts.next().and_then(|v| v.parse::<u64>().ok()).unwrap_or(0) * 1024;
+        let value = parts
+            .next()
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(0)
+            * 1024;
 
         match key {
             "MemTotal" => info.total = value,
@@ -358,9 +386,18 @@ fn read_loadavg() -> LoadInfo {
     let parts = content.split_whitespace().collect::<Vec<_>>();
 
     LoadInfo {
-        one: parts.get(0).and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0),
-        five: parts.get(1).and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0),
-        fifteen: parts.get(2).and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0),
+        one: parts
+            .get(0)
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0),
+        five: parts
+            .get(1)
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0),
+        fifteen: parts
+            .get(2)
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0),
     }
 }
 
@@ -393,7 +430,9 @@ fn read_containers() -> Vec<ContainerInfo> {
         .output();
 
     let stdout = match output {
-        Ok(output) if output.status.success() => String::from_utf8(output.stdout).unwrap_or_default(),
+        Ok(output) if output.status.success() => {
+            String::from_utf8(output.stdout).unwrap_or_default()
+        }
         _ => return Vec::new(),
     };
 
@@ -410,13 +449,62 @@ fn read_containers() -> Vec<ContainerInfo> {
         .collect()
 }
 
+fn read_websites() -> Vec<WebsiteInfo> {
+    let default = [
+        "Arjuna Multimedia=http://127.0.0.1:8082/",
+        "Portofolio Tegar=http://127.0.0.1:8083/",
+        "Revenue Bosowa CI=http://127.0.0.1:8085/",
+        "BengkelFlow=http://127.0.0.1:8086/",
+        "HG680P Monitor=http://127.0.0.1:8099/health",
+        "Inventory Web=http://127.0.0.1:3002/",
+    ]
+    .join(",");
+    let items = env::var("MONITOR_WEBSITES").unwrap_or(default);
+
+    items
+        .split(',')
+        .filter_map(|item| {
+            let (name, url) = item.split_once('=')?;
+            let status = http_status(url.trim()).unwrap_or(0);
+            Some(WebsiteInfo {
+                name: name.trim().to_string(),
+                url: url.trim().to_string(),
+                status,
+                ok: (200..400).contains(&status),
+            })
+        })
+        .collect()
+}
+
+fn http_status(url: &str) -> Option<u16> {
+    let rest = url.strip_prefix("http://")?;
+    let (host_port, path) = rest.split_once('/').unwrap_or((rest, ""));
+    let (host, port) = host_port.split_once(':').unwrap_or((host_port, "80"));
+    let port = port.parse::<u16>().ok()?;
+    let mut stream = TcpStream::connect((host, port)).ok()?;
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
+    let request = format!(
+        "GET /{} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
+        path, host_port
+    );
+    stream.write_all(request.as_bytes()).ok()?;
+
+    let mut buffer = [0; 128];
+    let size = stream.read(&mut buffer).ok()?;
+    let first_line = String::from_utf8_lossy(&buffer[..size]);
+    first_line.split_whitespace().nth(1)?.parse().ok()
+}
+
 fn read_top_processes() -> Vec<ProcessInfo> {
     let output = Command::new("ps")
         .args(["-eo", "pid,comm,%cpu,%mem,rss,args", "--sort=-rss"])
         .output();
 
     let stdout = match output {
-        Ok(output) if output.status.success() => String::from_utf8(output.stdout).unwrap_or_default(),
+        Ok(output) if output.status.success() => {
+            String::from_utf8(output.stdout).unwrap_or_default()
+        }
         _ => return Vec::new(),
     };
 
@@ -491,4 +579,30 @@ fn json_escape(value: &str) -> String {
         .replace('\n', "\\n")
         .replace('\r', "\\r")
         .replace('\t', "\\t")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::thread;
+
+    #[test]
+    fn http_status_reads_response_code() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buffer = [0; 256];
+            let _ = stream.read(&mut buffer);
+            stream
+                .write_all(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n")
+                .unwrap();
+        });
+
+        assert_eq!(
+            http_status(&format!("http://127.0.0.1:{}/health", port)),
+            Some(204)
+        );
+    }
 }

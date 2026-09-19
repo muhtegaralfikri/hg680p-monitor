@@ -15,6 +15,25 @@ Dashboard monitoring server ringan untuk STB/HG680P.
 - `/api/status` data JSON
 - `/health` health check
 
+## Website Monitor
+
+Default website yang dipantau:
+
+```text
+8082 Arjuna Multimedia
+8083 Portofolio Tegar
+8085 Revenue Bosowa CI
+8086 BengkelFlow
+8099 HG680P Monitor
+3002 Inventory Web
+```
+
+Override lewat env:
+
+```bash
+MONITOR_WEBSITES="Nama=http://127.0.0.1:8080/,App=http://127.0.0.1:3000/"
+```
+
 ## Build Lokal
 
 ```bash

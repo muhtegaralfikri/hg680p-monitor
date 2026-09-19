@@ -653,6 +653,7 @@
           <div class="detail-card"><span class="muted">Root free</span><strong class="mono" id="detailDiskFree">-</strong></div>
           <div class="detail-card"><span class="muted">Services</span><strong class="mono" id="detailServices">-</strong></div>
           <div class="detail-card"><span class="muted">Containers</span><strong class="mono" id="detailContainers">-</strong></div>
+          <div class="detail-card"><span class="muted">Websites</span><strong class="mono" id="detailWebsites">-</strong></div>
           <div class="detail-card"><span class="muted">Top process</span><strong class="mono truncate" id="detailTopProcess">-</strong></div>
         </article>
       </section>
@@ -685,6 +686,11 @@
         <article class="card panel">
           <div class="panel-head"><h2>Docker Containers</h2><span class="badge mono" id="containersCount">-</span></div>
           <div class="container-list" id="containers"></div>
+        </article>
+
+        <article class="card panel">
+          <div class="panel-head"><h2>Websites</h2><span class="badge mono" id="websitesCount">-</span></div>
+          <ul class="service-list" id="websites"></ul>
         </article>
       </section>
 
@@ -1016,6 +1022,19 @@
       }).join("") || `<div class="muted mono">Tidak ada container berjalan.</div>`;
     }
 
+    function renderWebsites(websites) {
+      const list = Array.isArray(websites) ? websites : [];
+      const up = list.filter((site) => site.ok).length;
+      $("websitesCount").textContent = list.length ? `${up} / ${list.length} HTTP ok` : "none";
+      $("websites").innerHTML = list.map((site) => `
+        <li class="service-item ${site.ok ? "" : "off"}">
+          <span class="service-name mono truncate">${esc(site.name)}</span>
+          <span class="muted mono truncate">${esc(site.url)}</span>
+          <span class="status-pill mono ${site.ok ? "" : "red"}">${site.status || "down"}</span>
+        </li>
+      `).join("") || `<li class="muted mono">Tidak ada website yang dipantau.</li>`;
+    }
+
     function renderProcesses(processes) {
       const list = Array.isArray(processes) ? processes : [];
       $("processRows").innerHTML = list.map((process) => `
@@ -1040,11 +1059,13 @@
       if (data.temperature_c !== null && Number(data.temperature_c) >= 60) issues.push("Suhu tinggi");
       const inactive = (data.services || []).filter((service) => !service.active).map((service) => service.name);
       if (inactive.length) issues.push(`Service mati: ${inactive.join(", ")}`);
+      const downSites = (data.websites || []).filter((site) => !site.ok).map((site) => site.name);
+      if (downSites.length) issues.push(`Web down: ${downSites.join(", ")}`);
 
       const criticalDisk = rootDisk && pct(usedPercent(rootDisk)) >= 80;
       const criticalTemp = data.temperature_c !== null && Number(data.temperature_c) >= 75;
       const criticalLoad = pct(data.cpu_percent) >= 80 || pct(usedPercent(data.memory)) >= 80;
-      const worst = inactive.length || criticalDisk || criticalTemp || criticalLoad ? "red" : issues.length ? "orange" : "safe";
+      const worst = inactive.length || downSites.length || criticalDisk || criticalTemp || criticalLoad ? "red" : issues.length ? "orange" : "safe";
       const badge = $("overallBadge");
       badge.className = `status-pill mono ${worst === "safe" ? "" : worst}`;
       badge.textContent = worst === "safe" ? "healthy" : worst === "orange" ? "warning" : "critical";
@@ -1085,6 +1106,7 @@
         $("detailDiskFree").textContent = root ? size(freeBytes(root)) : "-";
         $("detailServices").textContent = `${(data.services || []).filter((service) => service.active).length}/${(data.services || []).length}`;
         $("detailContainers").textContent = `${(data.containers || []).filter((container) => String(container.status || "").toLowerCase().startsWith("up")).length}/${(data.containers || []).length}`;
+        $("detailWebsites").textContent = `${(data.websites || []).filter((site) => site.ok).length}/${(data.websites || []).length}`;
         $("detailTopProcess").textContent = data.processes?.[0]?.name || "-";
 
         updateOverall(data, root);
@@ -1093,6 +1115,7 @@
         renderServices(data.services);
         renderDisks(data.disks);
         renderContainers(data.containers);
+        renderWebsites(data.websites);
         renderProcesses(data.processes);
       } catch (error) {
         $("subtitle").textContent = `Gagal memuat data: ${error.message}`;
