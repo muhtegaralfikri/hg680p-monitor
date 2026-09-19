@@ -25,8 +25,9 @@ fi
 
 mkdir -p "${INSTALL_DIR}" "${STATE_DIR}"
 
-asset_url="${DOWNLOAD_BASE}/${ASSET_NAME}"
-sha_url="${DOWNLOAD_BASE}/${ASSET_NAME}.sha256"
+cache_buster="$(date +%s)"
+asset_url="${DOWNLOAD_BASE}/${ASSET_NAME}?t=${cache_buster}"
+sha_url="${DOWNLOAD_BASE}/${ASSET_NAME}.sha256?t=${cache_buster}"
 
 curl "${header_args[@]}" -L "${asset_url}" -o "${WORK_DIR}/${ASSET_NAME}"
 curl "${header_args[@]}" -L "${sha_url}" -o "${WORK_DIR}/${ASSET_NAME}.sha256"
