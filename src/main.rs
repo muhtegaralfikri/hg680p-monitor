@@ -324,9 +324,9 @@ fn read_disks() -> Vec<DiskInfo> {
             let fs_type = parts.get(1)?.to_string();
             let total = parts.get(2)?.parse::<u64>().ok()?;
             let used = parts.get(3)?.parse::<u64>().ok()?;
-            let path = parts.get(6)?.to_string();
+            let path = parts.get(6..)?.join(" ");
 
-            if !["/", "/boot", "/srv", "/var", "/DATA"].contains(&path.as_str()) {
+            if !monitored_mount(&path) {
                 return None;
             }
 
@@ -339,6 +339,12 @@ fn read_disks() -> Vec<DiskInfo> {
             })
         })
         .collect()
+}
+
+fn monitored_mount(path: &str) -> bool {
+    ["/", "/boot", "/srv", "/var", "/DATA"].contains(&path)
+        || path.starts_with("/media/")
+        || path.starts_with("/mnt/")
 }
 
 fn read_uptime_seconds() -> u64 {
@@ -671,5 +677,12 @@ mod tests {
             http_status(&format!("http://127.0.0.1:{}/health", port)),
             Some(204)
         );
+    }
+
+    #[test]
+    fn monitored_mount_includes_external_disks() {
+        assert!(monitored_mount("/media/devmon/New Volume"));
+        assert!(monitored_mount("/mnt/hdd"));
+        assert!(!monitored_mount("/run"));
     }
 }
