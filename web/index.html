@@ -398,8 +398,8 @@
     }
 
     .update-button {
-      min-height: 26px;
-      padding: 3px 8px;
+      min-height: 30px;
+      padding: 4px 10px;
       border: 1px solid var(--line);
       border-radius: 4px;
       background: var(--panel-2);
@@ -410,6 +410,18 @@
 
     .update-button:hover { border-color: var(--accent); }
     .update-button:disabled { cursor: wait; opacity: .65; }
+
+    .update-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 2px;
+    }
+
+    .update-actions .update-button {
+      background: rgba(56, 139, 253, .12);
+      border-color: rgba(56, 139, 253, .45);
+    }
 
     .detail-grid {
       display: grid;
@@ -764,8 +776,12 @@
         <article class="card panel">
           <div class="panel-head">
             <h2>Websites</h2>
-            <button class="update-button mono" type="button" data-update="hg680p-monitor">Update monitor</button>
             <span class="badge mono" id="websitesCount">-</span>
+          </div>
+          <div class="update-actions">
+            <button class="update-button mono" type="button" data-update="tegar-drive">Update Tegar Drive</button>
+            <button class="update-button mono" type="button" data-update="bengkelflow">Update BengkelFlow</button>
+            <button class="update-button mono" type="button" data-update="hg680p-monitor">Update Monitor</button>
           </div>
           <ul class="service-list" id="websites"></ul>
         </article>
