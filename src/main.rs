@@ -511,10 +511,17 @@ fn discover_nginx_sites(items: &mut Vec<String>) {
                 .next()
                 .and_then(|value| value.trim_end_matches(';').parse::<u16>().ok())
             {
+                if is_monitor_port(port) {
+                    continue;
+                }
                 items.push(format!("{}=http://127.0.0.1:{}/", name, port));
             }
         }
     }
+}
+
+fn is_monitor_port(port: u16) -> bool {
+    port == 8099 || port == 18099
 }
 
 fn discover_docker_ports(items: &mut Vec<String>) {
@@ -684,5 +691,12 @@ mod tests {
         assert!(monitored_mount("/media/devmon/New Volume"));
         assert!(monitored_mount("/mnt/hdd"));
         assert!(!monitored_mount("/run"));
+    }
+
+    #[test]
+    fn monitor_ports_are_not_self_checked() {
+        assert!(is_monitor_port(8099));
+        assert!(is_monitor_port(18099));
+        assert!(!is_monitor_port(3002));
     }
 }
