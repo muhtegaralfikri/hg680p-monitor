@@ -106,6 +106,13 @@ fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<AppState>>) {
             let body = build_status_json(state);
             respond(&mut stream, 200, "application/json; charset=utf-8", &body);
         }
+        "/api/update" => {
+            let target = query_value(&request, "target").unwrap_or_default();
+            match trigger_update(&target) {
+                Ok(message) => respond(&mut stream, 200, "application/json; charset=utf-8", &message),
+                Err(message) => respond(&mut stream, 400, "application/json; charset=utf-8", &message),
+            }
+        }
         "/health" => respond(&mut stream, 200, "text/plain; charset=utf-8", "ok\n"),
         _ => respond(&mut stream, 404, "text/plain; charset=utf-8", "not found\n"),
     }
@@ -121,6 +128,44 @@ fn parse_path(request: &str) -> String {
         .next()
         .unwrap_or("/")
         .to_string()
+}
+
+fn query_value(request: &str, key: &str) -> Option<String> {
+    let target = request
+        .lines()
+        .next()?
+        .split_whitespace()
+        .nth(1)?
+        .split_once('?')?
+        .1;
+
+    target.split('&').find_map(|part| {
+        let (k, v) = part.split_once('=')?;
+        (k == key).then(|| v.replace("%2D", "-").replace("%2d", "-"))
+    })
+}
+
+fn trigger_update(target: &str) -> Result<String, String> {
+    let service = match target {
+        "tegar-drive" => "tegar-drive-update.service",
+        "bengkelflow" => "bengkelflow-deploy.service",
+        "hg680p-monitor" => "hg680p-monitor-update.service",
+        _ => return Err("{\"ok\":false,\"message\":\"unknown target\"}".to_string()),
+    };
+
+    let status = Command::new("systemctl").args(["start", service]).status();
+    match status {
+        Ok(status) if status.success() => Ok(format!(
+            "{{\"ok\":true,\"target\":\"{}\",\"service\":\"{}\"}}",
+            json_escape(target),
+            json_escape(service)
+        )),
+        _ => Err(format!(
+            "{{\"ok\":false,\"target\":\"{}\",\"service\":\"{}\"}}",
+            json_escape(target),
+            json_escape(service)
+        )),
+    }
 }
 
 fn respond(stream: &mut TcpStream, status: u16, content_type: &str, body: &str) {

@@ -397,6 +397,20 @@
       min-width: 80px;
     }
 
+    .update-button {
+      min-height: 26px;
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .update-button:hover { border-color: var(--accent); }
+    .update-button:disabled { cursor: wait; opacity: .65; }
+
     .detail-grid {
       display: grid;
       align-content: start;
@@ -748,7 +762,11 @@
         </article>
 
         <article class="card panel">
-          <div class="panel-head"><h2>Websites</h2><span class="badge mono" id="websitesCount">-</span></div>
+          <div class="panel-head">
+            <h2>Websites</h2>
+            <button class="update-button mono" type="button" data-update="hg680p-monitor">Update monitor</button>
+            <span class="badge mono" id="websitesCount">-</span>
+          </div>
           <ul class="service-list" id="websites"></ul>
         </article>
       </section>
@@ -1125,11 +1143,44 @@
           <span class="service-name mono truncate">${esc(site.name)}</span>
           <span class="service-url muted mono truncate">${esc(site.url)}</span>
           <canvas class="web-chart" id="webChart${index}" width="120" height="24" aria-hidden="true"></canvas>
+          ${updateTarget(site) ? `<button class="update-button mono" type="button" data-update="${updateTarget(site)}">Update</button>` : ""}
           <span class="status-pill mono ${site.ok ? "" : "red"}">${site.status || "down"}</span>
         </li>
       `).join("") || `<li class="muted mono">Tidak ada website yang dipantau.</li>`;
       drawWebCharts(list);
     }
+
+    function updateTarget(site) {
+      const value = `${site.name || ""} ${site.url || ""}`.toLowerCase();
+      if (value.includes("tegar") || value.includes("8084")) return "tegar-drive";
+      if (value.includes("bengkelflow") || value.includes("3010")) return "bengkelflow";
+      return "";
+    }
+
+    async function triggerUpdate(target, button) {
+      if (!target || !button) return;
+      const old = button.textContent;
+      button.disabled = true;
+      button.textContent = "Starting...";
+      try {
+        const response = await fetch(`/api/update?target=${encodeURIComponent(target)}`, { method: "POST" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        button.textContent = "Started";
+        setTimeout(refresh, 1500);
+      } catch (_) {
+        button.textContent = "Failed";
+      } finally {
+        setTimeout(() => {
+          button.disabled = false;
+          button.textContent = old;
+        }, 3000);
+      }
+    }
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-update]");
+      if (button) triggerUpdate(button.dataset.update, button);
+    });
 
     function drawWebCharts(websites) {
       (Array.isArray(websites) ? websites : []).forEach((site, index) => {
