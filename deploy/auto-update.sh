@@ -12,6 +12,7 @@ SERVICE="${APP_NAME}"
 STATE_DIR="/var/lib/${APP_NAME}"
 VERSION_FILE="${STATE_DIR}/deployed-sha256.txt"
 WORK_DIR="$(mktemp -d)"
+BACKUP_PATH="${WORK_DIR}/${APP_NAME}.previous"
 
 cleanup() {
   rm -rf "${WORK_DIR}"
@@ -43,11 +44,20 @@ printf '%s  %s\n' "${expected_sha}" "${ASSET_NAME}" > "${ASSET_NAME}.sha256.loca
 sha256sum -c "${ASSET_NAME}.sha256.local"
 chmod +x "${ASSET_NAME}"
 
-systemctl stop "${SERVICE}"
+if [ -f "${BIN_PATH}" ]; then
+  cp -p "${BIN_PATH}" "${BACKUP_PATH}"
+fi
+
+systemctl stop "${SERVICE}" || true
 install -m 755 "${ASSET_NAME}" "${BIN_PATH}"
-systemctl start "${SERVICE}"
-systemctl is-active "${SERVICE}"
-curl -fsSI "http://127.0.0.1:8099/" >/dev/null
+if ! systemctl start "${SERVICE}" || ! systemctl is-active "${SERVICE}" || ! curl -fsS "http://127.0.0.1:18099/health" >/dev/null; then
+  echo "${APP_NAME} update failed, rolling back." >&2
+  if [ -f "${BACKUP_PATH}" ]; then
+    install -m 755 "${BACKUP_PATH}" "${BIN_PATH}"
+    systemctl start "${SERVICE}" || true
+  fi
+  exit 1
+fi
 
 printf '%s' "${expected_sha}" > "${VERSION_FILE}"
 echo "${APP_NAME} deployed from latest release: ${expected_sha}"

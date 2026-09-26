@@ -107,10 +107,35 @@ fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<AppState>>) {
             respond(&mut stream, 200, "application/json; charset=utf-8", &body);
         }
         "/api/update" => {
+            let token = env::var("MONITOR_UPDATE_TOKEN").ok();
+            if let Some(message) = update_auth_error(&request, token.as_deref()) {
+                respond(
+                    &mut stream,
+                    if message == "method not allowed" {
+                        405
+                    } else {
+                        403
+                    },
+                    "application/json; charset=utf-8",
+                    &format!("{{\"ok\":false,\"message\":\"{}\"}}", message),
+                );
+                return;
+            }
+
             let target = query_value(&request, "target").unwrap_or_default();
             match trigger_update(&target) {
-                Ok(message) => respond(&mut stream, 200, "application/json; charset=utf-8", &message),
-                Err(message) => respond(&mut stream, 400, "application/json; charset=utf-8", &message),
+                Ok(message) => respond(
+                    &mut stream,
+                    200,
+                    "application/json; charset=utf-8",
+                    &message,
+                ),
+                Err(message) => respond(
+                    &mut stream,
+                    400,
+                    "application/json; charset=utf-8",
+                    &message,
+                ),
             }
         }
         "/health" => respond(&mut stream, 200, "text/plain; charset=utf-8", "ok\n"),
@@ -128,6 +153,41 @@ fn parse_path(request: &str) -> String {
         .next()
         .unwrap_or("/")
         .to_string()
+}
+
+fn request_method(request: &str) -> &str {
+    request
+        .lines()
+        .next()
+        .and_then(|line| line.split_whitespace().next())
+        .unwrap_or("")
+}
+
+fn header_value<'a>(request: &'a str, name: &str) -> Option<&'a str> {
+    request.lines().skip(1).find_map(|line| {
+        let (key, value) = line.split_once(':')?;
+        key.eq_ignore_ascii_case(name).then(|| value.trim())
+    })
+}
+
+fn update_auth_error<'a>(request: &str, configured_token: Option<&'a str>) -> Option<&'a str> {
+    if request_method(request) != "POST" {
+        return Some("method not allowed");
+    }
+
+    let Some(configured_token) = configured_token.filter(|token| !token.is_empty()) else {
+        return Some("update token not configured");
+    };
+
+    let token = header_value(request, "X-Monitor-Token")
+        .map(str::to_string)
+        .or_else(|| query_value(request, "token"));
+
+    if token.as_deref() == Some(configured_token) {
+        None
+    } else {
+        Some("forbidden")
+    }
 }
 
 fn query_value(request: &str, key: &str) -> Option<String> {
@@ -180,7 +240,7 @@ fn respond(stream: &mut TcpStream, status: u16, content_type: &str, body: &str) 
         status,
         reason,
         content_type,
-        body.as_bytes().len(),
+        body.len(),
         body
     );
 
@@ -365,7 +425,7 @@ fn read_disks() -> Vec<DiskInfo> {
         .skip(1)
         .filter_map(|line| {
             let parts = line.split_whitespace().collect::<Vec<_>>();
-            let filesystem = parts.get(0)?.to_string();
+            let filesystem = parts.first()?.to_string();
             let fs_type = parts.get(1)?.to_string();
             let total = parts.get(2)?.parse::<u64>().ok()?;
             let used = parts.get(3)?.parse::<u64>().ok()?;
@@ -438,7 +498,7 @@ fn read_loadavg() -> LoadInfo {
 
     LoadInfo {
         one: parts
-            .get(0)
+            .first()
             .and_then(|v| v.parse::<f64>().ok())
             .unwrap_or(0.0),
         five: parts
@@ -492,7 +552,7 @@ fn read_containers() -> Vec<ContainerInfo> {
         .filter_map(|line| {
             let parts = line.split('|').collect::<Vec<_>>();
             Some(ContainerInfo {
-                name: parts.get(0)?.to_string(),
+                name: parts.first()?.to_string(),
                 image: parts.get(1)?.to_string(),
                 status: parts.get(2)?.to_string(),
             })
@@ -550,12 +610,7 @@ fn discover_nginx_sites(items: &mut Vec<String>) {
             if !line.starts_with("listen ") || line.contains("[::]") {
                 continue;
             }
-            if let Some(port) = line
-                .trim_start_matches("listen ")
-                .split_whitespace()
-                .next()
-                .and_then(|value| value.trim_end_matches(';').parse::<u16>().ok())
-            {
+            if let Some(port) = nginx_listen_port(line) {
                 if is_monitor_port(port) {
                     continue;
                 }
@@ -563,6 +618,24 @@ fn discover_nginx_sites(items: &mut Vec<String>) {
             }
         }
     }
+}
+
+fn nginx_listen_port(line: &str) -> Option<u16> {
+    let value = line
+        .trim()
+        .strip_prefix("listen ")?
+        .split_whitespace()
+        .next()?
+        .trim_end_matches(';');
+
+    if value.contains("[::]") {
+        return None;
+    }
+
+    value
+        .rsplit(':')
+        .next()
+        .and_then(|port| port.parse::<u16>().ok())
 }
 
 fn is_monitor_port(port: u16) -> bool {
@@ -640,7 +713,7 @@ fn read_top_processes() -> Vec<ProcessInfo> {
         .filter_map(|line| {
             let parts = line.split_whitespace().collect::<Vec<_>>();
             Some(ProcessInfo {
-                pid: parts.get(0)?.to_string(),
+                pid: parts.first()?.to_string(),
                 name: parts.get(1)?.to_string(),
                 cpu: parts.get(2)?.to_string(),
                 memory: parts.get(3)?.to_string(),
@@ -652,16 +725,23 @@ fn read_top_processes() -> Vec<ProcessInfo> {
 }
 
 fn sanitize_command(command: &str) -> String {
-    let mut parts = command.split_whitespace().collect::<Vec<_>>();
+    let mut parts = command
+        .split_whitespace()
+        .map(str::to_string)
+        .collect::<Vec<_>>();
     let mut index = 0;
     while index < parts.len() {
-        if parts[index] == "--token" && index + 1 < parts.len() {
-            parts[index + 1] = "[redacted]";
+        if let Some((key, _)) = parts[index].split_once('=') {
+            if secret_flag(key) {
+                parts[index] = format!("{}=[redacted]", key);
+                index += 1;
+                continue;
+            }
+        }
+        if secret_flag(&parts[index]) && index + 1 < parts.len() {
+            parts[index + 1] = "[redacted]".to_string();
             index += 2;
             continue;
-        }
-        if parts[index].starts_with("--token=") {
-            parts[index] = "--token=[redacted]";
         }
         index += 1;
     }
@@ -673,6 +753,13 @@ fn sanitize_command(command: &str) -> String {
     } else {
         sanitized
     }
+}
+
+fn secret_flag(value: &str) -> bool {
+    let value = value.trim_start_matches('-').to_ascii_lowercase();
+    ["token", "password", "passwd", "secret", "key", "api-key"]
+        .iter()
+        .any(|needle| value.contains(needle))
 }
 
 fn hostname() -> String {
@@ -743,5 +830,53 @@ mod tests {
         assert!(is_monitor_port(8099));
         assert!(is_monitor_port(18099));
         assert!(!is_monitor_port(3002));
+    }
+
+    #[test]
+    fn update_requires_post_method() {
+        let request = "GET /api/update?target=hg680p-monitor HTTP/1.1\r\n\r\n";
+        assert_eq!(
+            update_auth_error(request, Some("secret")),
+            Some("method not allowed")
+        );
+    }
+
+    #[test]
+    fn update_requires_matching_token() {
+        let request =
+            "POST /api/update?target=hg680p-monitor HTTP/1.1\r\nX-Monitor-Token: nope\r\n\r\n";
+        assert_eq!(
+            update_auth_error(request, Some("secret")),
+            Some("forbidden")
+        );
+    }
+
+    #[test]
+    fn update_accepts_header_token() {
+        let request =
+            "POST /api/update?target=hg680p-monitor HTTP/1.1\r\nX-Monitor-Token: secret\r\n\r\n";
+        assert_eq!(update_auth_error(request, Some("secret")), None);
+    }
+
+    #[test]
+    fn sanitize_command_redacts_common_secret_flags() {
+        let command = "app --token abc --password=hunter2 --api-key secret --secret value";
+        let sanitized = sanitize_command(command);
+        assert!(!sanitized.contains("abc"));
+        assert!(!sanitized.contains("hunter2"));
+        assert!(!sanitized.contains(" value"));
+        assert!(sanitized.contains("--token [redacted]"));
+        assert!(sanitized.contains("--password=[redacted]"));
+        assert!(sanitized.contains("--api-key [redacted]"));
+    }
+
+    #[test]
+    fn nginx_listen_port_reads_common_forms() {
+        assert_eq!(nginx_listen_port("listen 3000;"), Some(3000));
+        assert_eq!(
+            nginx_listen_port("listen 127.0.0.1:3010 default_server;"),
+            Some(3010)
+        );
+        assert_eq!(nginx_listen_port("listen [::]:8080;"), None);
     }
 }

@@ -6,169 +6,150 @@
   <title>HG680P Monitor</title>
   <style>
     :root {
-      color-scheme: light dark;
-      --bg: #111418;
-      --panel: #161b22;
-      --panel-2: #1d2024;
-      --panel-3: #21262d;
-      --line: #262c36;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --faint: #6e7681;
-      --blue: #58a6ff;
-      --blue-2: #a2c9ff;
-      --green: #3fb950;
-      --yellow: #e3b341;
-      --red: #f85149;
-      --topbar: rgba(25, 28, 32, .98);
-      --live: #15191f;
-      --bar-bg: #30363d;
-      --chart-bg: #12161b;
-      --chart-grid: rgba(139, 148, 158, .15);
-      --chart-border: rgba(230, 237, 243, .25);
+      color-scheme: dark;
+      --bg: #0f1214;
+      --surface: #171b1f;
+      --surface-2: #1f2429;
+      --line: #30373f;
+      --text: #e8ecef;
+      --muted: #9aa4ad;
+      --accent: #71b7b2;
+      --blue: #6aa7e8;
+      --green: #64c77b;
+      --yellow: #d6ad4f;
+      --red: #ee6a61;
+      --bar: #38414a;
+      --shadow: rgba(0, 0, 0, .22);
       --radius: 6px;
     }
 
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #f4f1ec;
-      --panel: #fbf9f5;
-      --panel-2: #efebe4;
-      --panel-3: #e7e1d8;
-      --line: #d8d0c4;
-      --text: #26231f;
-      --muted: #625b52;
-      --faint: #7a7268;
-      --blue: #0969da;
-      --blue-2: #0550ae;
-      --green: #1a7f37;
-      --yellow: #9a6700;
-      --red: #cf222e;
-      --topbar: rgba(251, 249, 245, .96);
-      --live: #f7f4ee;
-      --bar-bg: #ddd5ca;
-      --chart-bg: #f8f5ef;
-      --chart-grid: rgba(98, 91, 82, .18);
-      --chart-border: rgba(38, 35, 31, .22);
+      --bg: #f5f6f2;
+      --surface: #ffffff;
+      --surface-2: #eef0ea;
+      --line: #d3d8ce;
+      --text: #202522;
+      --muted: #5f6a63;
+      --accent: #287d79;
+      --blue: #246eb9;
+      --green: #257a3e;
+      --yellow: #8a6414;
+      --red: #b23b35;
+      --bar: #dce1d8;
+      --shadow: rgba(32, 37, 34, .08);
     }
 
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       min-height: 100vh;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       font-size: 13px;
-      line-height: 1.38;
+      line-height: 1.4;
       font-variant-numeric: tabular-nums;
     }
 
     h1, h2, p { margin: 0; }
-    h1 { font-size: 20px; line-height: 28px; font-weight: 650; letter-spacing: 0; }
-    h2 { font-size: 14px; line-height: 20px; font-weight: 650; letter-spacing: 0; }
+    h1 { font-size: 20px; line-height: 1.2; font-weight: 700; }
+    h2 { font-size: 13px; line-height: 1.3; font-weight: 700; }
+    button { font: inherit; }
 
     .mono {
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, ui-monospace, monospace;
       font-variant-numeric: tabular-nums;
     }
 
     .muted { color: var(--muted); }
-    .faint { color: var(--faint); }
-    .nowrap { white-space: nowrap; }
     .truncate {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .clamp {
-      display: -webkit-box;
-      overflow: hidden;
-      overflow-wrap: anywhere;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-    }
 
     .topbar {
-      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 56px;
+      padding: 10px 20px;
       border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 94%, transparent);
+      backdrop-filter: blur(10px);
     }
 
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 14px;
-      font-weight: 650;
+      min-width: 180px;
+      font-weight: 700;
     }
 
-    .terminal-icon {
+    .brand-mark {
       display: grid;
-      width: 18px;
-      height: 18px;
+      width: 28px;
+      height: 28px;
       place-items: center;
-      border: 1px solid var(--blue);
-      border-radius: 3px;
-      color: var(--blue-2);
-      font-size: 12px;
-      line-height: 1;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--accent);
     }
 
-    .app {
-      min-height: 100vh;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 10;
+    .top-meta {
       display: flex;
+      flex: 1 1 auto;
       align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 0 24px;
-      background: var(--topbar);
+      gap: 10px;
+      min-width: 0;
+      color: var(--muted);
     }
 
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin-left: auto;
+      gap: 8px;
     }
 
-    .status-chip,
-    .badge,
-    .tag,
-    .live-pill {
+    .button,
+    .icon-button {
+      min-height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface-2);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .button { padding: 5px 10px; }
+    .icon-button { width: 32px; padding: 0; }
+    .button:hover, .icon-button:hover { border-color: var(--accent); }
+    .button:disabled { cursor: wait; opacity: .65; }
+
+    .chip,
+    .badge {
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      min-height: 24px;
       max-width: 100%;
+      min-height: 24px;
       padding: 3px 8px;
       border: 1px solid var(--line);
       border-radius: 4px;
-      background: var(--panel-2);
-      color: var(--text);
-      font-size: 12px;
+      background: var(--surface-2);
+      color: var(--muted);
       white-space: nowrap;
     }
 
-    .badge,
-    .tag {
-      min-height: 20px;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .status-chip::before,
-    .status-pill::before,
-    .live-dot {
+    .chip::before,
+    .dot::before {
       content: "";
       width: 7px;
       height: 7px;
@@ -177,35 +158,15 @@
       background: currentColor;
     }
 
-    .status-chip { color: var(--green); border-color: rgba(46, 160, 67, .4); background: rgba(46, 160, 67, .15); }
-    .status-chip.orange { color: var(--yellow); border-color: rgba(210, 153, 34, .4); background: rgba(210, 153, 34, .15); }
-    .status-chip.red { color: var(--red); border-color: rgba(248, 81, 73, .4); background: rgba(248, 81, 73, .15); }
-
-    .live-pill {
-      color: var(--text);
-      background: var(--live);
-      font-size: 12px;
-    }
-
-    .icon-button {
-      display: inline-grid;
-      width: 30px;
-      height: 30px;
-      place-items: center;
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background: var(--panel-2);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .live-dot { color: var(--green); }
+    .chip.ok { color: var(--green); }
+    .chip.warn { color: var(--yellow); }
+    .chip.bad { color: var(--red); }
+    .badge { min-height: 20px; font-size: 11px; }
 
     main {
-      width: min(100%, 1440px);
+      width: min(100%, 1480px);
       margin: 0 auto;
-      padding: 16px 24px 28px;
+      padding: 16px 20px 28px;
     }
 
     .page-head {
@@ -213,61 +174,39 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
-    .page-kicker {
-      margin-top: 2px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .sync-line {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 8px 14px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .sync-line i {
-      display: inline-block;
-      width: 7px;
-      height: 7px;
-      margin-right: 6px;
-      border-radius: 50%;
-      background: var(--blue-2);
-    }
-
-    .grid {
+    .page-head p { margin-top: 4px; color: var(--muted); }
+    .layout {
       display: grid;
-      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 14px;
+      align-items: start;
     }
 
-    .metrics {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin-bottom: 16px;
+    .grid { display: grid; gap: 12px; }
+    .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card,
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 8px 18px var(--shadow);
     }
 
     .metric {
-      --status: var(--blue-2);
-      --status-fill: var(--blue);
-      min-height: 88px;
+      --tone: var(--accent);
+      min-height: 108px;
       padding: 12px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
     }
 
     .metric-head,
-    .panel-head,
-    .progress-head,
+    .section-head,
     .row,
-    .service-item,
-    .mini-card,
-    .detail-card,
-    .chart-head {
+    .service-row,
+    .progress-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -275,7 +214,7 @@
       min-width: 0;
     }
 
-    .label {
+    .metric-label {
       color: var(--muted);
       font-size: 11px;
       letter-spacing: .08em;
@@ -283,34 +222,34 @@
     }
 
     .metric-value {
-      margin-top: 6px;
-      color: var(--status);
-      font-size: 20px;
-      font-weight: 700;
-      line-height: 1.2;
+      margin-top: 8px;
+      color: var(--tone);
+      font-size: 28px;
+      font-weight: 760;
+      line-height: 1;
     }
 
     .metric-value small {
       margin-left: 2px;
-      color: var(--faint);
-      font-size: 11px;
-      font-weight: 500;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
     }
 
     .metric-detail {
-      margin-top: 2px;
+      margin-top: 7px;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
       overflow-wrap: anywhere;
     }
 
     .bar {
       width: 100%;
       height: 7px;
-      margin-top: 9px;
+      margin-top: 10px;
       overflow: hidden;
       border-radius: 3px;
-      background: var(--bar-bg);
+      background: var(--bar);
     }
 
     .bar > span {
@@ -318,37 +257,26 @@
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: var(--status-fill);
+      background: var(--tone);
       transition: width .2s ease;
     }
 
-    .chart-grid {
-      grid-template-columns: minmax(0, 1.8fr) minmax(280px, .8fr);
-      margin-bottom: 16px;
-    }
-
-    .details {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-bottom: 16px;
-    }
-
-    .card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
-      overflow: hidden;
-    }
-
-    .panel,
-    .chart-wrap,
-    .detail-grid {
-      padding: 12px;
-    }
-
-    .panel-head {
+    .section { padding: 12px; }
+    .section-head {
       min-height: 28px;
       padding-bottom: 10px;
       border-bottom: 1px solid var(--line);
+    }
+
+    .chart-card { margin-top: 12px; }
+    .chart {
+      display: block;
+      width: 100%;
+      height: 260px;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface-2);
     }
 
     .legend {
@@ -359,89 +287,15 @@
       font-size: 12px;
     }
 
-    .legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .legend i {
-      width: 11px;
-      height: 2px;
-      border-radius: 2px;
-      background: currentColor;
-    }
-
-    .chart {
-      width: 100%;
-      height: 252px;
-      margin-top: 12px;
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background:
-        linear-gradient(180deg, rgba(88, 166, 255, .08), rgba(11, 14, 18, 0) 38%),
-        var(--chart-bg);
-    }
-
-    .web-chart {
-      width: 120px;
-      height: 24px;
-      flex: 0 0 auto;
-      border: 1px solid var(--line);
-      border-radius: 3px;
-      background: var(--chart-bg);
-    }
-
-    .service-url {
-      flex: 1 1 140px;
-      min-width: 80px;
-    }
-
-    .update-button {
-      min-height: 30px;
-      padding: 4px 10px;
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      background: var(--panel-2);
-      color: var(--text);
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .update-button:hover { border-color: var(--accent); }
-    .update-button:disabled { cursor: wait; opacity: .65; }
-
-    .update-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 8px 0 2px;
-    }
-
-    .update-actions .update-button {
-      background: rgba(56, 139, 253, .12);
-      border-color: rgba(56, 139, 253, .45);
-    }
-
-    .detail-grid {
-      display: grid;
-      align-content: start;
-      gap: 8px;
-    }
-
-    .detail-card,
-    .mini-card {
-      padding: 8px 10px;
-      border-radius: 4px;
-      background: var(--panel-2);
-    }
-
-    .detail-card strong { color: var(--text); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend i { width: 12px; height: 2px; border-radius: 2px; background: currentColor; }
+    .split { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+    .side { display: grid; gap: 12px; }
 
     .rows,
     .service-list,
-    .container-list,
-    .disk-list {
+    .disk-list,
+    .container-list {
       display: grid;
       gap: 0;
       margin: 10px 0 0;
@@ -450,434 +304,290 @@
     }
 
     .row,
-    .service-item,
+    .service-row,
     .progress-row {
       padding: 9px 0;
       border-bottom: 1px solid var(--line);
     }
 
     .row:last-child,
-    .service-item:last-child,
+    .service-row:last-child,
     .progress-row:last-child { border-bottom: 0; }
 
-    .service-name,
-    .mini-title {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      min-width: 0;
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .service-name::before,
-    .mini-title::before {
-      content: "";
-      width: 8px;
-      height: 8px;
-      flex: 0 0 auto;
-      border-radius: 50%;
-      background: var(--green);
-    }
-
-    .service-item.off .service-name::before,
-    .mini-card.off .mini-title::before { background: var(--red); }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 22px;
-      padding: 2px 7px;
-      border: 1px solid rgba(46, 160, 67, .4);
-      border-radius: 4px;
-      background: rgba(46, 160, 67, .15);
-      color: var(--green);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .status-pill.orange {
-      border-color: rgba(210, 153, 34, .4);
-      background: rgba(210, 153, 34, .15);
-      color: var(--yellow);
-    }
-
-    .status-pill.red {
-      border-color: rgba(248, 81, 73, .4);
-      background: rgba(248, 81, 73, .15);
-      color: var(--red);
-    }
-
-    .progress-row {
+    .service-main {
       display: grid;
-      gap: 7px;
+      gap: 2px;
+      min-width: 0;
     }
 
-    .mount-line {
-      display: flex;
-      align-items: baseline;
+    .service-name {
+      display: inline-flex;
+      align-items: center;
       gap: 8px;
       min-width: 0;
+      font-weight: 700;
     }
 
-    .mount-name { flex: 0 0 auto; }
-    .mount-meta {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .dot {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--green);
       white-space: nowrap;
     }
 
-    .mini-main {
-      min-width: 0;
-      flex: 1 1 auto;
-    }
-
-    .section { margin-top: 0; }
+    .dot.off { color: var(--red); }
+    .progress-row { display: grid; gap: 7px; }
+    .action-grid { display: grid; gap: 8px; margin-top: 10px; }
+    .action-grid .button { width: 100%; text-align: left; }
     .table-wrap { overflow-x: auto; }
 
     table {
       width: 100%;
-      min-width: 560px;
-      table-layout: fixed;
+      min-width: 620px;
       border-collapse: collapse;
-      font-size: 13px;
+      table-layout: fixed;
     }
 
-    th, td {
-      padding: 10px 14px;
+    th,
+    td {
+      padding: 10px 12px;
       border-bottom: 1px solid var(--line);
       vertical-align: top;
     }
 
     th {
-      height: 32px;
-      background: var(--bg);
       color: var(--muted);
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 700;
       letter-spacing: .08em;
       text-align: left;
       text-transform: uppercase;
+      background: var(--surface-2);
     }
 
-    td:first-child {
-      width: 100%;
-      max-width: 1px;
-    }
-
+    td:first-child { width: 100%; max-width: 1px; }
     th.right, td.right { text-align: right; }
     th:nth-child(2), td:nth-child(2) { width: 110px; }
-    th:nth-child(3), td:nth-child(3) { width: 82px; }
-    th:nth-child(4), td:nth-child(4) { width: 90px; }
-    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--panel-2) 45%, transparent); }
-    tbody tr:hover { background: var(--panel-3); }
-
-    .process-name {
-      color: var(--text);
-      font-weight: 650;
-    }
+    th:nth-child(3), td:nth-child(3) { width: 78px; }
+    th:nth-child(4), td:nth-child(4) { width: 82px; }
 
     .process-command {
+      display: -webkit-box;
       margin-top: 2px;
+      overflow: hidden;
+      overflow-wrap: anywhere;
       color: var(--muted);
       font-size: 11px;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
     }
 
-    .process-command-short,
-    .mobile-processes { display: none; }
-
-    footer {
-      margin-top: 16px;
-      padding-top: 12px;
-      border-top: 1px solid var(--line);
-      color: var(--faint);
-      text-align: center;
-      font-size: 11px;
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    @media (max-width: 980px) {
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .chart-grid,
-      .details { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 640px) {
-      body { font-size: 12px; }
+    @media (max-width: 760px) {
       .topbar {
-        height: auto;
-        align-items: flex-start;
+        align-items: stretch;
         flex-direction: column;
+        gap: 10px;
         padding: 10px;
       }
+
+      .top-meta,
       .top-actions {
         width: 100%;
         justify-content: space-between;
-        gap: 8px;
       }
+
       main { padding: 12px 10px 22px; }
-      .page-head {
-        flex-direction: column;
-        gap: 8px;
-      }
-      .sync-line { justify-content: flex-start; }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .metric {
-        min-height: 104px;
-        padding: 10px;
-      }
-      .metric-value { font-size: 18px; }
-      .metric-detail {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
+      .page-head { flex-direction: column; gap: 8px; }
+      .metrics, .split, .side { grid-template-columns: 1fr; }
+      .metric { min-height: 96px; }
+      .metric-value { font-size: 24px; }
       .chart { height: 220px; }
-      .panel, .chart-wrap, .detail-grid { padding: 10px; }
-      .panel-head { padding-bottom: 8px; }
-      .legend { gap: 6px 8px; }
-      .row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 3px;
-      }
-      .service-item { flex-wrap: wrap; }
-      .web-chart { width: 96px; }
-      .mount-line { display: block; }
-      .mount-meta {
-        display: block;
-        margin-top: 2px;
-        white-space: normal;
-      }
-      table { min-width: 360px; font-size: 11px; }
+      .service-row { align-items: flex-start; flex-direction: column; gap: 6px; }
+      table { min-width: 420px; font-size: 12px; }
       th, td { padding: 8px; }
-      th:nth-child(2), td:nth-child(2) { width: 82px; }
-      th:nth-child(3), td:nth-child(3) { width: 58px; }
-      th:nth-child(4), td:nth-child(4) { width: 66px; }
-      .process-command-full { display: none; }
-      .process-command-short { display: -webkit-box; }
-      footer { text-align: left; }
     }
   </style>
 </head>
 <body>
   <div class="app">
     <header class="topbar">
-      <div class="brand"><span class="terminal-icon mono">&gt;_</span><span>Server Monitor</span></div>
+      <div class="brand"><span class="brand-mark mono">HG</span><span>HG680P Monitor</span></div>
+      <div class="top-meta mono">
+        <span class="chip ok" id="topStatus">Normal</span>
+        <span class="truncate">Host: <strong id="hostnameTag">-</strong></span>
+        <span>Update: <strong id="updatedTime">-</strong></span>
+      </div>
       <div class="top-actions">
-        <span class="status-chip mono" id="topStatus">All Systems Operational</span>
-        <span class="live-pill mono"><span>Updated</span><strong id="updatedTime">-</strong></span>
-        <button class="icon-button mono" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">◐</button>
+        <button class="button mono" id="refreshButton" type="button">Refresh</button>
+        <button class="icon-button mono" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">T</button>
       </div>
     </header>
 
     <main>
-      <section class="page-head" aria-label="Konteks halaman">
+      <section class="page-head" aria-label="Ringkasan">
         <div>
           <h1>Dashboard</h1>
-          <p class="page-kicker mono" id="subtitle">Memuat data server...</p>
+          <p class="mono" id="subtitle">Memuat telemetry server...</p>
         </div>
-        <div class="sync-line mono">
-          <span><i></i>Auto-sync: 5s</span>
-          <span>Node: <code id="hostnameTag">-</code></span>
-        </div>
+        <span class="badge mono">auto-sync 5s</span>
       </section>
 
-      <section class="grid metrics" aria-label="Statistik utama">
+      <section class="grid metrics" aria-label="Metrik utama">
         <article class="metric" id="cpuCard">
-          <div class="metric-head"><span class="label mono">CPU</span><span class="badge mono" id="cpuBadge">-</span></div>
+          <div class="metric-head"><span class="metric-label mono">CPU</span><span class="badge mono" id="cpuBadge">-</span></div>
           <div class="metric-value mono"><span id="cpuValue">-</span><small>%</small></div>
           <p class="metric-detail mono" id="cpuDetail">-</p>
           <div class="bar"><span id="cpuBar"></span></div>
         </article>
-
         <article class="metric" id="ramCard">
-          <div class="metric-head"><span class="label mono">RAM</span><span class="badge mono" id="ramBadge">-</span></div>
+          <div class="metric-head"><span class="metric-label mono">RAM</span><span class="badge mono" id="ramBadge">-</span></div>
           <div class="metric-value mono"><span id="ramValue">-</span><small>%</small></div>
           <p class="metric-detail mono" id="ramDetail">-</p>
           <div class="bar"><span id="ramBar"></span></div>
         </article>
-
         <article class="metric" id="diskCard">
-          <div class="metric-head"><span class="label mono">Root Disk</span><span class="badge mono" id="diskBadge">-</span></div>
+          <div class="metric-head"><span class="metric-label mono">Root Disk</span><span class="badge mono" id="diskBadge">-</span></div>
           <div class="metric-value mono"><span id="diskValue">-</span><small>%</small></div>
           <p class="metric-detail mono" id="diskDetail">-</p>
           <div class="bar"><span id="diskBar"></span></div>
         </article>
-
         <article class="metric" id="tempCard">
-          <div class="metric-head"><span class="label mono">Thermal</span><span class="badge mono" id="tempBadge">-</span></div>
-          <div class="metric-value mono"><span id="tempValue">-</span><small>&deg;C</small></div>
+          <div class="metric-head"><span class="metric-label mono">Thermal</span><span class="badge mono" id="tempBadge">-</span></div>
+          <div class="metric-value mono"><span id="tempValue">-</span><small>C</small></div>
           <p class="metric-detail mono" id="tempDetail">-</p>
           <div class="bar"><span id="tempBar"></span></div>
         </article>
       </section>
 
-      <section class="grid chart-grid" aria-label="Grafik dan detail cepat">
-        <article class="card chart-wrap">
-          <div class="chart-head">
-            <div>
-              <h2>Performance</h2>
-              <div class="legend mono">
-                <span style="color:#58a6ff"><i></i>CPU</span>
-                <span style="color:#a371f7"><i></i>RAM</span>
-                <span style="color:#e3b341"><i></i>Disk</span>
-                <span style="color:#f85149"><i></i>Thermal</span>
+      <div class="layout">
+        <div>
+          <section class="card section chart-card" aria-label="Grafik performa">
+            <div class="section-head">
+              <div>
+                <h2>Performance Window</h2>
+                <div class="legend mono">
+                  <span style="color:var(--blue)"><i></i>CPU</span>
+                  <span style="color:var(--accent)"><i></i>RAM</span>
+                  <span style="color:var(--yellow)"><i></i>Disk</span>
+                  <span style="color:var(--red)"><i></i>Suhu</span>
+                </div>
               </div>
+              <span class="badge mono">60 sample</span>
             </div>
-            <span class="badge mono">5m window</span>
-          </div>
-          <canvas class="chart" id="mainChart" width="900" height="260"></canvas>
-        </article>
+            <canvas class="chart" id="mainChart" width="900" height="260"></canvas>
+          </section>
 
-        <article class="card detail-grid">
-          <div class="panel-head"><h2>Quick Detail</h2><span class="badge mono">Live</span></div>
-          <div class="detail-card"><span class="muted">Load 1/5/15</span><strong class="mono" id="detailLoad">-</strong></div>
-          <div class="detail-card"><span class="muted">RAM free</span><strong class="mono" id="detailRamFree">-</strong></div>
-          <div class="detail-card"><span class="muted">Root free</span><strong class="mono" id="detailDiskFree">-</strong></div>
-          <div class="detail-card"><span class="muted">Services</span><strong class="mono" id="detailServices">-</strong></div>
-          <div class="detail-card"><span class="muted">Containers</span><strong class="mono" id="detailContainers">-</strong></div>
-          <div class="detail-card"><span class="muted">Websites</span><strong class="mono" id="detailWebsites">-</strong></div>
-          <div class="detail-card"><span class="muted">Top process</span><strong class="mono truncate" id="detailTopProcess">-</strong></div>
-        </article>
-      </section>
+          <section class="grid split" aria-label="Layanan dan website">
+            <article class="card section">
+              <div class="section-head"><h2>Website</h2><span class="badge mono" id="websitesCount">-</span></div>
+              <ul class="service-list" id="websites"></ul>
+            </article>
+            <article class="card section">
+              <div class="section-head"><h2>Services</h2><span class="badge mono" id="servicesCount">-</span></div>
+              <ul class="service-list" id="services"></ul>
+            </article>
+          </section>
 
-      <section class="grid details" aria-label="Detail server">
-        <article class="card panel">
-          <div class="panel-head"><h2>Server Summary</h2><span class="status-pill mono" id="overallBadge">baik</span></div>
-          <div class="rows">
-            <div class="row"><span class="muted">Hostname</span><strong class="mono" id="summaryHost">-</strong></div>
-            <div class="row"><span class="muted">Uptime</span><strong class="mono" id="summaryUptime">-</strong></div>
-            <div class="progress-row">
-              <div class="progress-head"><span class="muted">Swap</span><strong class="mono" id="swapLabel">-</strong></div>
-              <div class="bar"><span id="swapBar"></span></div>
-              <div class="mono muted" id="swapDetail">-</div>
+          <section class="card section chart-card" aria-label="Proses paling berat">
+            <div class="section-head"><h2>Top Processes</h2><span class="badge mono">RSS sort</span></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Process</th><th class="right">Memory</th><th class="right">CPU</th><th class="right">PID</th></tr>
+                </thead>
+                <tbody id="processRows">
+                  <tr><td colspan="4" class="muted mono">Menunggu data...</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="row"><span class="muted">Notes</span><strong class="mono" id="summaryNote">-</strong></div>
-          </div>
-        </article>
-
-        <article class="card panel">
-          <div class="panel-head"><h2>Core Services</h2><span class="badge mono" id="servicesCount">-</span></div>
-          <ul class="service-list" id="services"></ul>
-        </article>
-
-        <article class="card panel">
-          <div class="panel-head"><h2>Storage Mounts</h2><span class="badge mono">df -T</span></div>
-          <div class="disk-list" id="disks"></div>
-        </article>
-
-        <article class="card panel">
-          <div class="panel-head"><h2>Docker Containers</h2><span class="badge mono" id="containersCount">-</span></div>
-          <div class="container-list" id="containers"></div>
-        </article>
-
-        <article class="card panel">
-          <div class="panel-head">
-            <h2>Websites</h2>
-            <span class="badge mono" id="websitesCount">-</span>
-          </div>
-          <div class="update-actions">
-            <button class="update-button mono" type="button" data-update="tegar-drive">Update Tegar Drive</button>
-            <button class="update-button mono" type="button" data-update="bengkelflow">Update BengkelFlow</button>
-            <button class="update-button mono" type="button" data-update="hg680p-monitor">Update Monitor</button>
-          </div>
-          <ul class="service-list" id="websites"></ul>
-        </article>
-      </section>
-
-      <section class="card section" id="processes" aria-label="Proses paling berat">
-        <div class="panel-head panel"><h2>Top Processes</h2><span class="badge mono">RSS sorted</span></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Process</th><th class="right">RAM</th><th class="right">CPU</th><th class="right">PID</th></tr>
-            </thead>
-            <tbody id="processRows"></tbody>
-          </table>
+          </section>
         </div>
-        <div class="mobile-processes" id="mobileProcesses"></div>
-      </section>
 
-      <footer class="mono">HG680P - Armbian Linux - Auto-refresh 5s - Single Page System Monitor</footer>
+        <aside class="side" aria-label="Detail">
+          <article class="card section">
+            <div class="section-head"><h2>Server</h2><span class="badge mono" id="overallBadge">-</span></div>
+            <div class="rows">
+              <div class="row"><span class="muted">Hostname</span><strong class="mono truncate" id="summaryHost">-</strong></div>
+              <div class="row"><span class="muted">Uptime</span><strong class="mono" id="summaryUptime">-</strong></div>
+              <div class="row"><span class="muted">Load</span><strong class="mono" id="detailLoad">-</strong></div>
+              <div class="row"><span class="muted">RAM free</span><strong class="mono" id="detailRamFree">-</strong></div>
+              <div class="row"><span class="muted">Disk free</span><strong class="mono" id="detailDiskFree">-</strong></div>
+              <div class="row"><span class="muted">Top process</span><strong class="mono truncate" id="detailTopProcess">-</strong></div>
+            </div>
+          </article>
+
+          <article class="card section">
+            <div class="section-head"><h2>Swap</h2><span class="badge mono" id="swapLabel">-</span></div>
+            <div class="bar"><span id="swapBar"></span></div>
+            <p class="metric-detail mono" id="swapDetail">-</p>
+          </article>
+
+          <article class="card section">
+            <div class="section-head"><h2>Disks</h2><span class="badge mono" id="diskCount">-</span></div>
+            <div class="disk-list" id="disks"></div>
+          </article>
+
+          <article class="card section">
+            <div class="section-head"><h2>Containers</h2><span class="badge mono" id="containersCount">-</span></div>
+            <div class="container-list" id="containers"></div>
+          </article>
+
+          <article class="card section">
+            <div class="section-head"><h2>Actions</h2><span class="badge mono">token</span></div>
+            <div class="action-grid">
+              <button class="button mono" type="button" data-update="hg680p-monitor">Update monitor</button>
+              <button class="button mono" type="button" data-update="tegar-drive">Update tegar-drive</button>
+              <button class="button mono" type="button" data-update="bengkelflow">Update bengkelflow</button>
+            </div>
+          </article>
+        </aside>
+      </div>
     </main>
   </div>
 
   <script>
     const $ = (id) => document.getElementById(id);
-    const COLORS = {
-      safe: "#58a6ff",
-      safeFill: "#58a6ff",
-      orange: "#e3b341",
-      orangeFill: "#e3b341",
-      red: "#f85149",
-      redFill: "#f85149"
-    };
     const history = [];
-    const webHistory = new Map();
-    let latestWebsites = [];
-
-    function applyTheme(theme) {
-      document.documentElement.dataset.theme = theme;
-      localStorage.setItem("monitor-theme", theme);
-      $("themeToggle").textContent = theme === "light" ? "D" : "L";
-      $("themeToggle").title = theme === "light" ? "Mode gelap" : "Mode terang";
-      renderChart();
-      drawWebCharts(latestWebsites);
-    }
+    let updateToken = "";
+    let lastData = null;
 
     function cssVar(name) {
       return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     }
 
-    function initTheme() {
-      const saved = localStorage.getItem("monitor-theme");
-      const theme = saved || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-      applyTheme(theme);
-      $("themeToggle").addEventListener("click", () => {
-        applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
-      });
-    }
-
-    function isMobile() {
-      return window.matchMedia("(max-width: 640px)").matches;
-    }
-
     function esc(value) {
-      return String(value ?? "-").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "\"": "&quot;",
-        "'": "&#39;"
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
       }[char]));
     }
 
     function pct(value) {
-      const n = Number(value || 0);
-      return Math.max(0, Math.min(100, n));
+      const number = Number(value || 0);
+      return Math.max(0, Math.min(100, Number.isFinite(number) ? number : 0));
     }
 
     function one(value) {
-      if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
-      return Number(value).toFixed(1);
+      const number = Number(value || 0);
+      return Number.isFinite(number) ? number.toFixed(1) : "0.0";
     }
 
     function size(bytes) {
-      const n = Number(bytes || 0);
-      if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)} GB`;
-      if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
-      if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`;
-      return `${n} B`;
-    }
-
-    function compactSize(bytes) {
-      const n = Number(bytes || 0);
-      if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(1)}G`;
-      if (n >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(0)}M`;
-      if (n >= 1024) return `${(n / 1024).toFixed(0)}K`;
-      return `${n}B`;
+      const value = Number(bytes || 0);
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      let n = value;
+      let i = 0;
+      while (n >= 1024 && i < units.length - 1) {
+        n /= 1024;
+        i += 1;
+      }
+      return `${n >= 10 || i === 0 ? n.toFixed(0) : n.toFixed(1)} ${units[i]}`;
     }
 
     function uptime(seconds) {
@@ -885,39 +595,9 @@
       const days = Math.floor(total / 86400);
       const hours = Math.floor((total % 86400) / 3600);
       const minutes = Math.floor((total % 3600) / 60);
-      if (days > 0) return `${days} hari ${hours} jam`;
-      if (hours > 0) return `${hours} jam ${minutes} menit`;
-      return `${minutes} menit`;
-    }
-
-    function shortUptime(seconds) {
-      const total = Number(seconds || 0);
-      const days = Math.floor(total / 86400);
-      const hours = Math.floor((total % 86400) / 3600);
-      const minutes = Math.floor((total % 3600) / 60);
-      if (days > 0) return `${days}h ${hours}j`;
-      if (hours > 0) return `${hours}j ${minutes}m`;
+      if (days) return `${days}d ${hours}h ${minutes}m`;
+      if (hours) return `${hours}h ${minutes}m`;
       return `${minutes}m`;
-    }
-
-    function statusTone(value) {
-      const n = pct(value);
-      if (n >= 80) return { key: "red", color: COLORS.red, fill: COLORS.redFill, label: "critical" };
-      if (n >= 60) return { key: "orange", color: COLORS.orange, fill: COLORS.orangeFill, label: "warning" };
-      return { key: "safe", color: COLORS.safe, fill: COLORS.safeFill, label: "healthy" };
-    }
-
-    function tempScore(celsius) {
-      if (celsius === null || celsius === undefined) return 0;
-      return pct((Number(celsius) / 90) * 100);
-    }
-
-    function tempTone(celsius) {
-      if (celsius === null || celsius === undefined) return statusTone(0);
-      const n = Number(celsius);
-      if (n >= 75) return { key: "red", color: COLORS.red, fill: COLORS.redFill, label: "critical" };
-      if (n >= 60) return { key: "orange", color: COLORS.orange, fill: COLORS.orangeFill, label: "warning" };
-      return { key: "safe", color: COLORS.safe, fill: COLORS.safeFill, label: "normal" };
     }
 
     function field(object, ...names) {
@@ -927,47 +607,45 @@
       return 0;
     }
 
+    function usedPercent(object) { return field(object, "percent", "used_percent"); }
+    function totalBytes(object) { return field(object, "total", "total_bytes"); }
+    function usedBytes(object) { return field(object, "used", "used_bytes"); }
+    function freeBytes(object) { return field(object, "free", "available", "available_bytes", "free_bytes"); }
+
+    function tone(value) {
+      const n = pct(value);
+      if (n >= 80) return { name: "critical", className: "bad", color: cssVar("--red") };
+      if (n >= 60) return { name: "warning", className: "warn", color: cssVar("--yellow") };
+      return { name: "normal", className: "ok", color: cssVar("--green") };
+    }
+
+    function tempPercent(celsius) {
+      if (celsius === null || celsius === undefined) return 0;
+      return pct((Number(celsius) / 90) * 100);
+    }
+
+    function tempTone(celsius) {
+      const n = Number(celsius || 0);
+      if (n >= 75) return { name: "critical", className: "bad", color: cssVar("--red") };
+      if (n >= 60) return { name: "warning", className: "warn", color: cssVar("--yellow") };
+      return { name: celsius === null || celsius === undefined ? "n/a" : "normal", className: "ok", color: cssVar("--green") };
+    }
+
     function loadText(load) {
       if (Array.isArray(load)) return load.map(one).join(" / ");
       if (load && typeof load === "object") return [load.one, load.five, load.fifteen].map(one).join(" / ");
-      return load ? String(load) : "-";
+      return "-";
     }
 
-    function usedPercent(object) {
-      return field(object, "used_percent", "percent");
-    }
-
-    function totalBytes(object) {
-      return field(object, "total_bytes", "total");
-    }
-
-    function usedBytes(object) {
-      return field(object, "used_bytes", "used");
-    }
-
-    function freeBytes(object) {
-      return field(object, "available_bytes", "available", "free_bytes", "free");
-    }
-
-    function setMetric(prefix, percent, value, detail, badge, toneOverride) {
-      const tone = toneOverride || statusTone(percent);
-      $(`${prefix}Card`).style.setProperty("--status", tone.color);
-      $(`${prefix}Card`).style.setProperty("--status-fill", tone.fill);
+    function setMetric(prefix, percent, value, detail, badge, customTone) {
+      const state = customTone || tone(percent);
+      const card = $(`${prefix}Card`);
+      card.style.setProperty("--tone", state.color);
       $(`${prefix}Value`).textContent = value;
       $(`${prefix}Detail`).textContent = detail;
-      $(`${prefix}Badge`).textContent = badge || tone.label;
+      $(`${prefix}Badge`).textContent = badge || state.name;
       $(`${prefix}Bar`).style.width = `${pct(percent)}%`;
-      $(`${prefix}Bar`).style.background = tone.fill;
-    }
-
-    function diskText(disk) {
-      if (!disk) return "-";
-      return `${size(usedBytes(disk))} used of ${size(totalBytes(disk))} - free ${size(freeBytes(disk))}`;
-    }
-
-    function metricText(used, total, free) {
-      if (isMobile()) return `${compactSize(used)} / ${compactSize(total)}`;
-      return `${size(used)} used of ${size(total)} - free ${size(free)}`;
+      $(`${prefix}Bar`).style.background = state.color;
     }
 
     function pushHistory(data, root) {
@@ -975,62 +653,23 @@
         cpu: pct(data.cpu_percent),
         ram: pct(usedPercent(data.memory)),
         disk: pct(usedPercent(root)),
-        temp: tempScore(data.temperature_c),
+        temp: tempPercent(data.temperature_c)
       });
       if (history.length > 60) history.shift();
     }
 
-    function pushWebHistory(websites) {
-      (Array.isArray(websites) ? websites : []).forEach((site) => {
-        const key = site.url || site.name;
-        const rows = webHistory.get(key) || [];
-        rows.push(site.ok ? 1 : 0);
-        if (rows.length > 30) rows.shift();
-        webHistory.set(key, rows);
-      });
-    }
-
-    function chartPoints(values, x, y, width, height) {
-      return values.map((value, index) => ({
-        x: x + (index / Math.max(1, values.length - 1)) * width,
-        y: y + height - (pct(value) / 100) * height
-      }));
-    }
-
-    function drawSmoothPath(ctx, points) {
-      if (points.length < 2) return;
+    function drawLine(ctx, values, color, bounds) {
+      if (values.length < 2) return;
       ctx.beginPath();
-      ctx.moveTo(points[0].x, points[0].y);
-      points.slice(1).forEach((point, index) => {
-        const prev = points[index];
-        const midX = (prev.x + point.x) / 2;
-        ctx.bezierCurveTo(midX, prev.y, midX, point.y, point.x, point.y);
+      values.forEach((value, index) => {
+        const x = bounds.x + (index / Math.max(1, values.length - 1)) * bounds.w;
+        const y = bounds.y + bounds.h - (pct(value) / 100) * bounds.h;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       });
-    }
-
-    function drawSeries(ctx, values, color, areaColor, bounds) {
-      const points = chartPoints(values, bounds.x, bounds.y, bounds.w, bounds.h);
-      if (points.length < 2) return;
-      drawSmoothPath(ctx, points);
-      ctx.lineTo(bounds.x + bounds.w, bounds.y + bounds.h);
-      ctx.lineTo(bounds.x, bounds.y + bounds.h);
-      ctx.closePath();
-      const fill = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.h);
-      fill.addColorStop(0, areaColor);
-      fill.addColorStop(1, "rgba(11, 14, 18, 0)");
-      ctx.fillStyle = fill;
-      ctx.fill();
-
-      drawSmoothPath(ctx, points);
       ctx.lineWidth = 2;
       ctx.strokeStyle = color;
       ctx.stroke();
-
-      const last = points[points.length - 1];
-      ctx.beginPath();
-      ctx.fillStyle = color;
-      ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
-      ctx.fill();
     }
 
     function renderChart() {
@@ -1043,88 +682,75 @@
       ctx.scale(ratio, ratio);
       const w = rect.width;
       const h = rect.height;
-      const bounds = { x: 42, y: 18, w: Math.max(1, w - 56), h: Math.max(1, h - 44) };
+      const bounds = { x: 38, y: 18, w: Math.max(1, w - 52), h: Math.max(1, h - 44) };
       ctx.clearRect(0, 0, w, h);
       ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
       ctx.fillStyle = cssVar("--muted");
-      ctx.strokeStyle = cssVar("--chart-grid");
+      ctx.strokeStyle = document.documentElement.dataset.theme === "light" ? "rgba(95,106,99,.24)" : "rgba(154,164,173,.20)";
       ctx.lineWidth = 1;
 
       [0, 25, 50, 75, 100].forEach((mark) => {
         const y = bounds.y + bounds.h - (mark / 100) * bounds.h;
         ctx.beginPath();
-        ctx.setLineDash(mark === 0 ? [] : [2, 5]);
+        ctx.setLineDash(mark === 0 ? [] : [3, 5]);
         ctx.moveTo(bounds.x, y);
         ctx.lineTo(bounds.x + bounds.w, y);
         ctx.stroke();
-        ctx.fillText(`${mark}`, 10, y + 4);
+        ctx.fillText(`${mark}`, 8, y + 4);
       });
-
-      ctx.setLineDash([2, 7]);
-      for (let i = 0; i <= 6; i += 1) {
-        const x = bounds.x + (i / 6) * bounds.w;
-        ctx.beginPath();
-        ctx.moveTo(x, bounds.y);
-        ctx.lineTo(x, bounds.y + bounds.h);
-        ctx.stroke();
-      }
 
       ctx.setLineDash([]);
-      ctx.strokeStyle = cssVar("--chart-border");
+      ctx.strokeStyle = cssVar("--line");
       ctx.strokeRect(bounds.x, bounds.y, bounds.w, bounds.h);
-      ctx.fillStyle = cssVar("--muted");
-      ["-5m", "-4m", "-3m", "-2m", "-1m", "now"].forEach((label, index) => {
-        const x = bounds.x + (index / 5) * bounds.w;
-        ctx.fillText(label, index === 5 ? x - 22 : x - 9, bounds.y + bounds.h + 20);
-      });
-
-      drawSeries(ctx, history.map((x) => x.disk), "#e3b341", "rgba(227, 179, 65, .08)", bounds);
-      drawSeries(ctx, history.map((x) => x.temp), "#f85149", "rgba(248, 81, 73, .07)", bounds);
-      drawSeries(ctx, history.map((x) => x.ram), "#a371f7", "rgba(163, 113, 247, .12)", bounds);
-      drawSeries(ctx, history.map((x) => x.cpu), "#58a6ff", "rgba(88, 166, 255, .16)", bounds);
-    }
-
-    function shortCommand(command) {
-      const text = String(command || "-")
-        .replace(/--token(=|\s+)\S+/g, "--token [redacted]")
-        .replace(/\s+/g, " ")
-        .trim();
-      if (text.length <= 34) return text;
-      return `${text.slice(0, 31)}...`;
+      drawLine(ctx, history.map((x) => x.disk), cssVar("--yellow"), bounds);
+      drawLine(ctx, history.map((x) => x.temp), cssVar("--red"), bounds);
+      drawLine(ctx, history.map((x) => x.ram), cssVar("--accent"), bounds);
+      drawLine(ctx, history.map((x) => x.cpu), cssVar("--blue"), bounds);
     }
 
     function renderServices(services) {
       const list = Array.isArray(services) ? services : [];
       const active = list.filter((service) => service.active).length;
-      $("servicesCount").textContent = `${active} / ${list.length} passing`;
+      $("servicesCount").textContent = `${active}/${list.length}`;
       $("services").innerHTML = list.map((service) => `
-        <li class="service-item ${service.active ? "" : "off"}">
+        <li class="service-row">
           <span class="service-name mono truncate">${esc(service.name)}</span>
-          <span class="status-pill mono ${service.active ? "" : "red"}">${service.active ? "running" : "down"}</span>
+          <span class="dot mono ${service.active ? "" : "off"}">${service.active ? "running" : "down"}</span>
         </li>
-      `).join("") || `<li class="muted mono">Tidak ada service yang dipantau.</li>`;
+      `).join("") || `<li class="service-row muted mono">Tidak ada service yang dipantau.</li>`;
+    }
+
+    function renderWebsites(websites) {
+      const list = Array.isArray(websites) ? websites : [];
+      const up = list.filter((site) => site.ok).length;
+      $("websitesCount").textContent = list.length ? `${up}/${list.length}` : "0";
+      $("websites").innerHTML = list.map((site) => `
+        <li class="service-row">
+          <span class="service-main">
+            <strong class="mono truncate">${esc(site.name || site.url)}</strong>
+            <span class="muted mono truncate">${esc(site.url)}</span>
+          </span>
+          <span class="dot mono ${site.ok ? "" : "off"}">${site.status || "down"}</span>
+        </li>
+      `).join("") || `<li class="service-row muted mono">Belum ada website terdeteksi.</li>`;
     }
 
     function renderDisks(disks) {
       const list = Array.isArray(disks) ? disks : [];
+      $("diskCount").textContent = String(list.length);
       $("disks").innerHTML = list.map((disk) => {
         const used = pct(usedPercent(disk));
-        const tone = statusTone(used);
-        const mount = disk.mount || disk.path || "-";
-        const fstype = disk.fstype || "disk";
+        const state = tone(used);
         return `
           <div class="progress-row">
             <div class="progress-head">
-              <div class="mount-line">
-                <strong class="mono mount-name">${esc(mount)}</strong>
-                <span class="muted mono mount-meta">${esc(isMobile() ? fstype : disk.filesystem)}</span>
-              </div>
-              <strong class="mono nowrap">${isMobile() ? `${compactSize(usedBytes(disk))} / ${compactSize(totalBytes(disk))}` : `${size(usedBytes(disk))} / ${size(totalBytes(disk))}`}</strong>
+              <strong class="mono truncate">${esc(disk.path || disk.mount || "-")}</strong>
+              <span class="mono" style="color:${state.color}">${one(used)}%</span>
             </div>
-            <div class="bar"><span style="width:${used}%; background:${tone.color}"></span></div>
-            <div class="progress-head mono">
-              <span class="muted">free ${isMobile() ? compactSize(freeBytes(disk)) : size(freeBytes(disk))}</span>
-              <span style="color:${tone.color}; font-weight:650">${one(used)}% ${tone.label}</span>
+            <div class="bar"><span style="width:${used}%; background:${state.color}"></span></div>
+            <div class="progress-head mono muted">
+              <span class="truncate">${esc(disk.filesystem || disk.fstype || "disk")}</span>
+              <span>${size(usedBytes(disk))} / ${size(totalBytes(disk))}</span>
             </div>
           </div>
         `;
@@ -1134,53 +760,73 @@
     function renderContainers(containers) {
       const list = Array.isArray(containers) ? containers : [];
       const running = list.filter((container) => String(container.status || "").toLowerCase().startsWith("up")).length;
-      $("containersCount").textContent = list.length ? `${running} / ${list.length} running` : "none";
+      $("containersCount").textContent = list.length ? `${running}/${list.length}` : "0";
       $("containers").innerHTML = list.map((container) => {
         const up = String(container.status || "").toLowerCase().startsWith("up");
         return `
-          <div class="mini-card ${up ? "" : "off"}">
-            <div class="mini-main">
-              <div class="mini-title mono truncate">${esc(container.name)}</div>
-              <p class="muted mono clamp">${esc(container.image)}</p>
-            </div>
-            <span class="status-pill mono ${up ? "" : "red"}">${up ? "up" : "stop"}</span>
+          <div class="service-row">
+            <span class="service-main">
+              <strong class="mono truncate">${esc(container.name)}</strong>
+              <span class="muted mono truncate">${esc(container.image)}</span>
+            </span>
+            <span class="dot mono ${up ? "" : "off"}">${up ? "up" : "stop"}</span>
           </div>
         `;
       }).join("") || `<div class="muted mono">Tidak ada container berjalan.</div>`;
     }
 
-    function renderWebsites(websites) {
-      const list = Array.isArray(websites) ? websites : [];
-      latestWebsites = list;
-      const up = list.filter((site) => site.ok).length;
-      $("websitesCount").textContent = list.length ? `${up} / ${list.length} HTTP ok` : "none";
-      $("websites").innerHTML = list.map((site, index) => `
-        <li class="service-item ${site.ok ? "" : "off"}">
-          <span class="service-name mono truncate">${esc(site.name)}</span>
-          <span class="service-url muted mono truncate">${esc(site.url)}</span>
-          <canvas class="web-chart" id="webChart${index}" width="120" height="24" aria-hidden="true"></canvas>
-          ${updateTarget(site) ? `<button class="update-button mono" type="button" data-update="${updateTarget(site)}">Update</button>` : ""}
-          <span class="status-pill mono ${site.ok ? "" : "red"}">${site.status || "down"}</span>
-        </li>
-      `).join("") || `<li class="muted mono">Tidak ada website yang dipantau.</li>`;
-      drawWebCharts(list);
+    function renderProcesses(processes) {
+      const list = Array.isArray(processes) ? processes : [];
+      $("processRows").innerHTML = list.map((process) => `
+        <tr>
+          <td>
+            <strong class="mono">${esc(process.name)}</strong>
+            <div class="process-command mono">${esc(process.command)}</div>
+          </td>
+          <td class="right mono"><strong>${size(field(process, "rss", "rss_bytes"))}</strong><br><span class="muted">${esc(field(process, "memory", "mem_percent"))}%</span></td>
+          <td class="right mono">${esc(field(process, "cpu", "cpu_percent"))}%</td>
+          <td class="right mono muted">${esc(process.pid)}</td>
+        </tr>
+      `).join("") || `<tr><td colspan="4" class="muted mono">Data proses belum tersedia.</td></tr>`;
     }
 
-    function updateTarget(site) {
-      const value = `${site.name || ""} ${site.url || ""}`.toLowerCase();
-      if (value.includes("tegar") || value.includes("8084")) return "tegar-drive";
-      if (value.includes("bengkelflow") || value.includes("3010")) return "bengkelflow";
-      return "";
+    function updateOverall(data, root) {
+      const issues = [];
+      if (pct(data.cpu_percent) >= 60) issues.push("CPU");
+      if (pct(usedPercent(data.memory)) >= 60) issues.push("RAM");
+      if (root && pct(usedPercent(root)) >= 60) issues.push("Disk");
+      if (data.temperature_c !== null && Number(data.temperature_c) >= 60) issues.push("Suhu");
+      const downServices = (data.services || []).filter((service) => !service.active).length;
+      const downSites = (data.websites || []).filter((site) => !site.ok).length;
+      if (downServices) issues.push(`${downServices} service`);
+      if (downSites) issues.push(`${downSites} website`);
+
+      const bad = issues.length && (downServices || downSites || pct(data.cpu_percent) >= 80 || pct(usedPercent(data.memory)) >= 80);
+      const state = bad ? "bad" : issues.length ? "warn" : "ok";
+      const label = state === "ok" ? "Normal" : state === "warn" ? `Warning: ${issues.join(", ")}` : `Perlu cek: ${issues.join(", ")}`;
+      $("topStatus").className = `chip ${state}`;
+      $("topStatus").textContent = label;
+      $("overallBadge").textContent = state === "ok" ? "healthy" : state;
+      $("overallBadge").style.color = state === "bad" ? cssVar("--red") : state === "warn" ? cssVar("--yellow") : cssVar("--green");
     }
 
     async function triggerUpdate(target, button) {
       if (!target || !button) return;
+      if (!updateToken) updateToken = window.prompt("MONITOR_UPDATE_TOKEN") || "";
+      if (!updateToken) return;
+
       const old = button.textContent;
       button.disabled = true;
       button.textContent = "Starting...";
       try {
-        const response = await fetch(`/api/update?target=${encodeURIComponent(target)}`, { method: "POST" });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const response = await fetch(`/api/update?target=${encodeURIComponent(target)}`, {
+          method: "POST",
+          headers: { "X-Monitor-Token": updateToken }
+        });
+        if (!response.ok) {
+          if (response.status === 403) updateToken = "";
+          throw new Error(`HTTP ${response.status}`);
+        }
         button.textContent = "Started";
         setTimeout(refresh, 1500);
       } catch (_) {
@@ -1193,129 +839,77 @@
       }
     }
 
-    document.addEventListener("click", (event) => {
-      const button = event.target.closest("[data-update]");
-      if (button) triggerUpdate(button.dataset.update, button);
-    });
-
-    function drawWebCharts(websites) {
-      (Array.isArray(websites) ? websites : []).forEach((site, index) => {
-        const canvas = $(`webChart${index}`);
-        if (!canvas) return;
-        const rows = webHistory.get(site.url || site.name) || [];
-        const ctx = canvas.getContext("2d");
-        const w = canvas.width;
-        const h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = cssVar("--chart-bg");
-        ctx.fillRect(0, 0, w, h);
-        const gap = 2;
-        const bar = Math.max(2, Math.floor((w - gap * 29) / 30));
-        rows.slice(-30).forEach((ok, i) => {
-          ctx.fillStyle = ok ? cssVar("--green") : cssVar("--red");
-          ctx.fillRect(i * (bar + gap), ok ? 6 : 3, bar, ok ? 12 : 18);
-        });
-      });
-    }
-
-    function renderProcesses(processes) {
-      const list = Array.isArray(processes) ? processes : [];
-      $("processRows").innerHTML = list.map((process) => `
-        <tr>
-          <td>
-            <div class="process-name mono">${esc(process.name)}</div>
-            <div class="process-command process-command-full mono clamp">${esc(process.command)}</div>
-            <div class="process-command process-command-short mono clamp">${esc(shortCommand(process.command))}</div>
-          </td>
-          <td class="right mono nowrap"><strong>${isMobile() ? compactSize(field(process, "rss_bytes", "rss")) : size(field(process, "rss_bytes", "rss"))}</strong><br><span class="muted">${esc(field(process, "mem_percent", "memory"))}%</span></td>
-          <td class="right mono nowrap">${esc(field(process, "cpu_percent", "cpu"))}%</td>
-          <td class="right mono nowrap muted">${esc(process.pid)}</td>
-        </tr>
-      `).join("") || `<tr><td colspan="4" class="muted mono">Data proses belum tersedia.</td></tr>`;
-    }
-
-    function updateOverall(data, rootDisk) {
-      const issues = [];
-      if (pct(data.cpu_percent) >= 60) issues.push("CPU tinggi");
-      if (pct(usedPercent(data.memory)) >= 60) issues.push("RAM tinggi");
-      if (rootDisk && pct(usedPercent(rootDisk)) >= 60) issues.push("Disk tinggi");
-      if (data.temperature_c !== null && Number(data.temperature_c) >= 60) issues.push("Suhu tinggi");
-      const inactive = (data.services || []).filter((service) => !service.active).map((service) => service.name);
-      if (inactive.length) issues.push(`Service mati: ${inactive.join(", ")}`);
-      const downSites = (data.websites || []).filter((site) => !site.ok).map((site) => site.name);
-      if (downSites.length) issues.push(`Web down: ${downSites.join(", ")}`);
-
-      const criticalDisk = rootDisk && pct(usedPercent(rootDisk)) >= 80;
-      const criticalTemp = data.temperature_c !== null && Number(data.temperature_c) >= 75;
-      const criticalLoad = pct(data.cpu_percent) >= 80 || pct(usedPercent(data.memory)) >= 80;
-      const worst = inactive.length || downSites.length || criticalDisk || criticalTemp || criticalLoad ? "red" : issues.length ? "orange" : "safe";
-      const badge = $("overallBadge");
-      badge.className = `status-pill mono ${worst === "safe" ? "" : worst}`;
-      badge.textContent = worst === "safe" ? "healthy" : worst === "orange" ? "warning" : "critical";
-      const top = $("topStatus");
-      top.className = `status-chip mono ${worst === "safe" ? "" : worst}`;
-      top.textContent = worst === "safe" ? "All Systems Operational" : worst === "orange" ? "Degraded" : "Action Required";
-      $("summaryNote").textContent = issues.length ? issues.join(" | ") : "Semua metrik utama normal";
-    }
-
     async function refresh() {
       try {
         const response = await fetch("/api/status", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-        const rootDisk = (data.disks || []).find((disk) => (disk.mount || disk.path) === "/") || (data.disks || [])[0];
-        const root = data.disk || rootDisk;
+        lastData = data;
+        const rootDisk = (data.disks || []).find((disk) => (disk.path || disk.mount) === "/") || (data.disks || [])[0];
+        const root = data.disk || rootDisk || {};
 
         $("hostnameTag").textContent = data.hostname || "-";
-        $("subtitle").textContent = `${data.hostname || "server"} - refresh otomatis 5 detik`;
-        $("updatedTime").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
         $("summaryHost").textContent = data.hostname || "-";
         $("summaryUptime").textContent = uptime(data.uptime_seconds);
+        $("subtitle").textContent = `${data.hostname || "server"} - website auto-discovery dari nginx dan Docker`;
+        $("updatedTime").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
 
-        setMetric("cpu", data.cpu_percent, one(data.cpu_percent), `load ${loadText(data.load)}`, `${data.cpu_cores || "-"} core`);
-        setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), metricText(usedBytes(data.memory), totalBytes(data.memory), freeBytes(data.memory)), `total ${isMobile() ? compactSize(totalBytes(data.memory)) : size(totalBytes(data.memory))}`);
-        setMetric("disk", usedPercent(root), one(usedPercent(root)), isMobile() && root ? `${compactSize(usedBytes(root))} / ${compactSize(totalBytes(root))}` : diskText(root), root?.fstype || "root");
-        setMetric("temp", tempScore(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${isMobile() ? shortUptime(data.uptime_seconds) : uptime(data.uptime_seconds)}`, "SoC", tempTone(data.temperature_c));
+        setMetric("cpu", data.cpu_percent, one(data.cpu_percent), `load ${loadText(data.load)}`, "live");
+        setMetric("ram", usedPercent(data.memory), one(usedPercent(data.memory)), `${size(usedBytes(data.memory))} / ${size(totalBytes(data.memory))}`, `free ${size(freeBytes(data.memory))}`);
+        setMetric("disk", usedPercent(root), one(usedPercent(root)), `${size(usedBytes(root))} / ${size(totalBytes(root))}`, root.path || "/");
+        setMetric("temp", tempPercent(data.temperature_c), data.temperature_c === null ? "-" : one(data.temperature_c), `uptime ${uptime(data.uptime_seconds)}`, "SoC", tempTone(data.temperature_c));
 
-        const swapPercent = pct(usedPercent(data.swap));
-        const swapTone = statusTone(swapPercent);
-        $("swapLabel").textContent = `${one(swapPercent)}%`;
-        $("swapBar").style.width = `${swapPercent}%`;
-        $("swapBar").style.background = swapTone.color;
-        $("swapDetail").textContent = metricText(usedBytes(data.swap), totalBytes(data.swap), freeBytes(data.swap));
+        const swap = pct(usedPercent(data.swap));
+        const swapState = tone(swap);
+        $("swapLabel").textContent = `${one(swap)}%`;
+        $("swapLabel").style.color = swapState.color;
+        $("swapBar").style.width = `${swap}%`;
+        $("swapBar").style.background = swapState.color;
+        $("swapDetail").textContent = `${size(usedBytes(data.swap))} / ${size(totalBytes(data.swap))}`;
 
         $("detailLoad").textContent = loadText(data.load);
         $("detailRamFree").textContent = size(freeBytes(data.memory));
         $("detailDiskFree").textContent = root ? size(freeBytes(root)) : "-";
-        $("detailServices").textContent = `${(data.services || []).filter((service) => service.active).length}/${(data.services || []).length}`;
-        $("detailContainers").textContent = `${(data.containers || []).filter((container) => String(container.status || "").toLowerCase().startsWith("up")).length}/${(data.containers || []).length}`;
-        $("detailWebsites").textContent = `${(data.websites || []).filter((site) => site.ok).length}/${(data.websites || []).length}`;
         $("detailTopProcess").textContent = data.processes?.[0]?.name || "-";
 
         updateOverall(data, root);
         pushHistory(data, root);
-        pushWebHistory(data.websites);
         renderChart();
         renderServices(data.services);
+        renderWebsites(data.websites);
         renderDisks(data.disks);
         renderContainers(data.containers);
-        renderWebsites(data.websites);
         renderProcesses(data.processes);
       } catch (error) {
         $("subtitle").textContent = `Gagal memuat data: ${error.message}`;
         $("updatedTime").textContent = "error";
-        $("topStatus").className = "status-chip mono red";
+        $("topStatus").className = "chip bad";
         $("topStatus").textContent = "Telemetry Offline";
       }
     }
 
+    function initTheme() {
+      const saved = localStorage.getItem("monitor-theme");
+      if (saved) document.documentElement.dataset.theme = saved;
+      $("themeToggle").addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "light" ? "" : "light";
+        document.documentElement.dataset.theme = next;
+        if (next) localStorage.setItem("monitor-theme", next);
+        else localStorage.removeItem("monitor-theme");
+        if (lastData) renderChart();
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-update]");
+      if (button) triggerUpdate(button.dataset.update, button);
+    });
+
+    $("refreshButton").addEventListener("click", refresh);
     initTheme();
     refresh();
     setInterval(refresh, 5000);
-    window.addEventListener("resize", () => {
-      renderChart();
-      drawWebCharts(latestWebsites);
-    });
+    window.addEventListener("resize", renderChart);
   </script>
 </body>
 </html>

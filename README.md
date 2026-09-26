@@ -22,6 +22,8 @@ Website dipantau otomatis dari:
 - Nginx aktif di `/etc/nginx/sites-enabled`
 - Port Docker yang dipublish ke host
 
+Jadi saat menambah website baru di server, cukup pastikan nginx site aktif atau container publish port ke host. Dashboard akan ikut menampilkan website baru saat refresh berikutnya tanpa edit config monitor.
+
 Override manual tetap bisa lewat env:
 
 ```bash
@@ -79,6 +81,20 @@ HG680P_MONITOR_REPO=muhtegaralfikri/hg680p-monitor
 HG680P_MONITOR_ASSET_NAME=hg680p-monitor
 ```
 
+Untuk mengaktifkan tombol update dari dashboard, isi token lokal:
+
+```bash
+nano /etc/hg680p-monitor/monitor.env
+```
+
+Contoh:
+
+```bash
+MONITOR_UPDATE_TOKEN=isi-dengan-token-panjang-random
+```
+
+Saat tombol update ditekan, dashboard akan meminta token tersebut. Tanpa token, endpoint update ditolak.
+
 Jika repository private, tambahkan token GitHub read-only:
 
 ```bash
@@ -98,7 +114,7 @@ Update manual tanpa build di server:
 bash deploy/pull-update.sh
 ```
 
-Server tidak perlu `cargo`/`rustc`. Semua build berat dikerjakan GitHub Actions.
+Server tidak perlu `cargo`/`rustc`. Semua build berat dikerjakan GitHub Actions. Jika binary baru gagal start atau health check gagal, auto-update akan mengembalikan binary sebelumnya.
 
 ## Catatan Nginx
 

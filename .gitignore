@@ -1,4 +1,5 @@
 /target/
+release-artifact-*/
 *.log
 *.tmp
 .env
