@@ -586,6 +586,7 @@ fn discover_websites() -> Vec<String> {
     let mut items = Vec::new();
     discover_nginx_sites(&mut items);
     discover_docker_ports(&mut items);
+    discover_listening_ports(&mut items);
     items
 }
 
@@ -672,6 +673,37 @@ fn discover_docker_ports(items: &mut Vec<String>) {
             }
         }
     }
+}
+
+fn discover_listening_ports(items: &mut Vec<String>) {
+    let output = Command::new("ss").args(["-H", "-ltn"]).output();
+
+    let stdout = match output {
+        Ok(output) if output.status.success() => {
+            String::from_utf8(output.stdout).unwrap_or_default()
+        }
+        _ => return,
+    };
+
+    for line in stdout.lines() {
+        let Some(port) = listening_port(line) else {
+            continue;
+        };
+        if monitored_http_port(port) {
+            items.push(format!("port-{}=http://127.0.0.1:{}/", port, port));
+        }
+    }
+}
+
+fn listening_port(line: &str) -> Option<u16> {
+    let local = line.split_whitespace().nth(3)?;
+    local.rsplit(':').next()?.parse::<u16>().ok()
+}
+
+fn monitored_http_port(port: u16) -> bool {
+    ((3000..4000).contains(&port) || (8000..9000).contains(&port))
+        && !is_monitor_port(port)
+        && ![22, 80, 443, 3306, 5432, 6379].contains(&port)
 }
 
 fn http_status(url: &str) -> Option<u16> {
@@ -878,5 +910,19 @@ mod tests {
             Some(3010)
         );
         assert_eq!(nginx_listen_port("listen [::]:8080;"), None);
+    }
+
+    #[test]
+    fn listening_ports_include_local_web_apps() {
+        assert_eq!(
+            listening_port("LISTEN 0 128 0.0.0.0:8084 0.0.0.0:*"),
+            Some(8084)
+        );
+        assert!(monitored_http_port(8080));
+        assert!(monitored_http_port(8084));
+        assert!(monitored_http_port(3002));
+        assert!(!monitored_http_port(8099));
+        assert!(!monitored_http_port(3306));
+        assert!(!monitored_http_port(5432));
     }
 }
