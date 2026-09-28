@@ -652,7 +652,28 @@
 
     @media (max-width: 860px) {
       main { padding: 16px 12px 24px; }
-      .topbar { background: var(--surface); }
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "brand actions" "meta meta";
+        align-items: center;
+        gap: 8px 12px;
+        padding: 8px 12px;
+        background: var(--surface);
+      }
+      .brand { grid-area: brand; }
+      .top-meta {
+        grid-area: meta;
+        width: auto;
+        min-width: 0;
+        align-items: center;
+        justify-content: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        font-size: 12px;
+      }
+      .top-actions { grid-area: actions; width: auto; gap: 6px; }
       .chart { height: 250px; }
       .layout > div > .chart-card:first-child { height: auto; }
       .layout > div > .chart-card:first-child .chart { flex: initial; min-height: 250px; height: 250px; }
@@ -663,6 +684,9 @@
 
     @media (max-width: 480px) {
       h1 { font-size: 22px; }
+      .top-meta { align-items: center; flex-direction: row; }
+      .top-actions { gap: 4px; }
+      .top-actions .button { min-height: 32px; padding: 6px 8px; }
       .chart { height: 210px; }
       .layout > div > .chart-card:first-child .chart { min-height: 210px; height: 210px; }
       .metric { min-height: 106px; padding: 12px; }
