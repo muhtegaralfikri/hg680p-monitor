@@ -558,9 +558,9 @@
       --muted: #607681;
       --accent: #087f8c;
       --blue: #2563eb;
-      --green: #009b62;
-      --yellow: #cf8100;
-      --red: #d94343;
+      --green: #15803d;
+      --yellow: #b45309;
+      --red: #b91c1c;
       --bar: #e7edf1;
       --shadow: transparent;
       --radius: 8px;
@@ -575,9 +575,9 @@
       --muted: #b4c6cf;
       --accent: #35c4c0;
       --blue: #72a7ff;
-      --green: #36d38b;
-      --yellow: #ffc34d;
-      --red: #ff7777;
+      --green: #86efac;
+      --yellow: #fde68a;
+      --red: #fca5a5;
       --bar: #304650;
     }
 
@@ -963,15 +963,16 @@
 
     function setMetric(prefix, percent, value, detail, badge, customTone) {
       const state = customTone || tone(percent);
+      const colorToken = `var(--${state.className === "bad" ? "red" : state.className === "warn" ? "yellow" : "green"})`;
       const card = $(`${prefix}Card`);
-      card.style.setProperty("--tone", state.color);
-      card.style.setProperty("--metric-color", state.color);
+      card.style.setProperty("--tone", colorToken);
+      card.style.setProperty("--metric-color", colorToken);
       $(`${prefix}Value`).textContent = value;
       $(`${prefix}Detail`).textContent = detail;
       $(`${prefix}Badge`).textContent = badge || state.name;
-      $(`${prefix}Badge`).style.color = state.color;
+      $(`${prefix}Badge`).style.color = colorToken;
       $(`${prefix}Bar`).style.width = `${pct(percent)}%`;
-      $(`${prefix}Bar`).style.background = state.color;
+      $(`${prefix}Bar`).style.background = colorToken;
     }
 
     function pushHistory(data, root) {
