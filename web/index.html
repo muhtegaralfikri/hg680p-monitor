@@ -322,6 +322,14 @@
     .website-page .detail-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .website-page .detail-tile { padding: 14px; }
     .website-page .detail-tile strong { margin-top: 6px; font-size: 16px; }
+    .website-history { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .website-history .section-head { padding-bottom: 8px; }
+    .website-chart svg { display: block; width: 100%; height: 220px; }
+    .website-chart text { fill: var(--muted); font: 11px "Cascadia Mono", Consolas, monospace; }
+    .website-chart .gridline { stroke: var(--line); stroke-dasharray: 3 5; }
+    .website-chart .latency-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: website-line-reveal .7s ease-out forwards; }
+    .website-history-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; color: var(--muted); font-size: 12px; }
+    @keyframes website-line-reveal { to { stroke-dashoffset: 0; } }
     .website-actions { justify-content: flex-start; margin-top: 20px; }
     .website-actions .button { display: inline-flex; align-items: center; min-height: 38px; text-decoration: none; }
     .website-open .page-head h1 { font-size: 16px; }
@@ -736,11 +744,19 @@
           <span id="focusMessage">Status terbaru dari pemeriksaan monitor.</span>
         </div>
         <div class="detail-grid">
-          <div class="detail-tile mono"><span>Status monitor</span><strong id="focusHealth">-</strong></div>
           <div class="detail-tile mono"><span>Kode HTTP</span><strong id="focusHttp">-</strong></div>
-          <div class="detail-tile mono"><span>URL</span><strong id="focusAddress">-</strong></div>
-          <div class="detail-tile mono"><span>Pembaruan terakhir</span><strong id="focusChecked">-</strong></div>
+          <div class="detail-tile mono"><span>Respons terkini</span><strong id="focusLatency">-</strong></div>
+          <div class="detail-tile mono"><span>Berhasil</span><strong id="focusAvailability">-</strong></div>
+          <div class="detail-tile mono"><span>Rata-rata respons</span><strong id="focusAverage">-</strong></div>
         </div>
+        <section class="website-history" aria-labelledby="websiteHistoryTitle">
+          <div class="section-head">
+            <h2 id="websiteHistoryTitle">Riwayat respons</h2>
+            <span class="badge mono" id="websiteSamplesCount">0 pemeriksaan</span>
+          </div>
+          <div class="website-chart" id="websiteChart"></div>
+          <div class="website-history-foot mono"><span>Hijau: tersedia · Merah: gagal</span><span id="websiteHistoryRange">Menunggu pemeriksaan</span></div>
+        </section>
         <div class="website-actions">
           <button class="button mono" id="websiteBack" type="button">Kembali ke dashboard</button>
           <a class="button mono" id="websiteOpen" target="_blank" rel="noopener noreferrer">Buka website</a>
@@ -863,6 +879,8 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const history = [];
+    const websiteHistory = new Map();
+    const websiteStates = new Map();
     let updateToken = "";
     let lastData = null;
     let chartFrame = 0;
@@ -950,6 +968,61 @@
       const status = Number(site?.status || 0);
       if (site?.ok) return { label: "running", className: "", text: status || "OK" };
       return { label: status ? "down" : "offline", className: "off", text: status || "-" };
+    }
+
+    function recordWebsiteSamples(websites) {
+      const checkedAt = Date.now();
+      (Array.isArray(websites) ? websites : []).forEach((site) => {
+        const key = siteKey(site);
+        const samples = websiteHistory.get(key) || [];
+        samples.push({
+          checkedAt,
+          ok: !!site.ok,
+          status: Number(site.status || 0),
+          responseTimeMs: site.response_time_ms == null ? null : Number(site.response_time_ms)
+        });
+        if (samples.length > 60) samples.shift();
+        websiteHistory.set(key, samples);
+      });
+    }
+
+    function renderWebsiteChart(samples) {
+      if (!samples.length) {
+        $("websiteChart").innerHTML = '<p class="muted mono">Menunggu pemeriksaan pertama...</p>';
+        return;
+      }
+
+      const chartWidth = Math.max(280, $("websiteChart").clientWidth);
+      const left = 48;
+      const right = chartWidth - 12;
+      const top = 14;
+      const bottom = 176;
+      const maxLatency = Math.max(0, ...samples.map((sample) => sample.responseTimeMs || 0));
+      const maxMs = Math.max(20, Math.ceil(maxLatency / 20) * 20);
+      const xAt = (index) => left + (index / Math.max(1, samples.length - 1)) * (right - left);
+      const yAt = (value) => bottom - (Math.min(maxMs, value) / maxMs) * (bottom - top);
+      const grid = [0, maxMs / 2, maxMs].map((value) => {
+        const y = yAt(value);
+        return `<line class="gridline" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/><text x="${left - 8}" y="${y + 4}" text-anchor="end">${Math.round(value)} ms</text>`;
+      }).join("");
+      let active = false;
+      let path = "";
+      const points = samples.map((sample, index) => {
+        const x = xAt(index);
+        if (sample.responseTimeMs === null || !Number.isFinite(sample.responseTimeMs)) {
+          active = false;
+          return `<rect x="${x - 3}" y="${bottom - 8}" width="6" height="8" rx="1" fill="var(--red)"><title>${esc(sample.status ? `HTTP ${sample.status}` : "Tidak merespons")}</title></rect>`;
+        }
+        const y = yAt(sample.responseTimeMs);
+        path += `${active ? "L" : "M"}${x},${y} `;
+        active = true;
+        return `<circle cx="${x}" cy="${y}" r="2.5" fill="var(${sample.ok ? "--green" : "--red"})"><title>${esc(`${sample.responseTimeMs} ms · HTTP ${sample.status || "-"}`)}</title></circle>`;
+      }).join("");
+      const first = new Date(samples[0].checkedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      const last = new Date(samples[samples.length - 1].checkedAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      $("websiteChart").innerHTML = `<svg viewBox="0 0 ${chartWidth} 220" role="img" aria-label="Grafik waktu respons dan status website selama ${samples.length} pemeriksaan"><g>${grid}</g><path class="latency-line" pathLength="1" d="${path.trim()}"/>${points}<text x="${left}" y="212">${samples.length === 1 ? "terbaru" : "lama"}</text><text x="${right}" y="212" text-anchor="end">terbaru</text></svg>`;
+      $("websiteHistoryRange").textContent = `${first} - ${last}`;
+      $("websiteSamplesCount").textContent = `${samples.length} pemeriksaan`;
     }
 
     function websiteFromHash(websites) {
@@ -1117,6 +1190,9 @@
       const list = Array.isArray(websites) ? websites : [];
       const site = list.find((item) => siteKey(item) === selectedWebsite);
       const state = websiteStatus(site);
+      const samples = websiteHistory.get(siteKey(site)) || [];
+      const successfulSamples = samples.filter((sample) => sample.ok);
+      const latencies = successfulSamples.map((sample) => sample.responseTimeMs).filter(Number.isFinite);
       document.body.classList.toggle("website-open", websitePageOpen && !!site);
       $("pageTitle").textContent = websitePageOpen && site ? "Detail Website" : "Dashboard";
       $("subtitle").textContent = websitePageOpen && site
@@ -1129,10 +1205,18 @@
       $("focusStatus").classList.toggle("down", !!site && !site.ok);
       $("focusState").textContent = site ? state.label : "-";
       $("focusMessage").textContent = site?.ok ? "Website merespons saat pemeriksaan terakhir." : site ? "Website tidak merespons dengan status sukses." : "Website tidak ditemukan.";
-      $("focusHealth").textContent = site?.ok ? "Tersedia" : site ? "Tidak tersedia" : "-";
       $("focusHttp").textContent = state.text;
-      $("focusAddress").textContent = site?.url || "-";
-      $("focusChecked").textContent = $("updatedTime").textContent || "-";
+      $("focusLatency").textContent = Number.isFinite(site?.response_time_ms) ? `${site.response_time_ms} ms` : "Tidak terukur";
+      $("focusAvailability").textContent = samples.length ? `${(successfulSamples.length / samples.length * 100).toFixed(1)}%` : "-";
+      $("focusAverage").textContent = latencies.length ? `${Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length)} ms` : "-";
+      $("websiteSamplesCount").textContent = `${samples.length} pemeriksaan`;
+      renderWebsiteChart(samples);
+      const key = siteKey(site);
+      const previousState = websiteStates.get(key);
+      if (site && previousState !== undefined && previousState !== !!site.ok && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        $("focusStatus").animate([{ opacity: .55, transform: "translateY(2px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 320, easing: "ease-out" });
+      }
+      if (site) websiteStates.set(key, !!site.ok);
       if (site?.url) $("websiteOpen").href = site.url;
       else $("websiteOpen").removeAttribute("href");
     }
@@ -1264,6 +1348,7 @@
         const response = await fetch("/api/status", { cache: "no-store" });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
+        recordWebsiteSamples(data.websites);
         lastData = data;
         const rootDisk = (data.disks || []).find((disk) => (disk.path || disk.mount) === "/") || (data.disks || [])[0];
         const root = data.disk || rootDisk || {};

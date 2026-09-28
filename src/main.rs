@@ -52,6 +52,7 @@ struct WebsiteInfo {
     url: String,
     status: u16,
     ok: bool,
+    response_time_ms: Option<u64>,
 }
 
 #[derive(Default)]
@@ -318,11 +319,12 @@ fn build_status_json(state: Arc<Mutex<AppState>>) -> String {
         websites
             .iter()
             .map(|w| format!(
-                "{{\"name\":\"{}\",\"url\":\"{}\",\"status\":{},\"ok\":{}}}",
+                "{{\"name\":\"{}\",\"url\":\"{}\",\"status\":{},\"ok\":{},\"response_time_ms\":{}}}",
                 json_escape(&w.name),
                 json_escape(&w.url),
                 w.status,
-                w.ok
+                w.ok,
+                w.response_time_ms.map_or_else(|| "null".to_string(), |ms| ms.to_string())
             ))
             .collect::<Vec<_>>()
             .join(","),
@@ -567,12 +569,14 @@ fn read_websites() -> Vec<WebsiteInfo> {
         .split(',')
         .filter_map(|item| {
             let (name, url) = item.split_once('=')?;
-            let status = http_status(url.trim()).unwrap_or(0);
+            let check = http_check(url.trim());
+            let status = check.map_or(0, |(status, _)| status);
             Some(WebsiteInfo {
                 name: name.trim().to_string(),
                 url: url.trim().to_string(),
                 status,
                 ok: (200..400).contains(&status),
+                response_time_ms: check.map(|(_, elapsed_ms)| elapsed_ms),
             })
         })
         .collect::<Vec<_>>();
@@ -706,7 +710,8 @@ fn monitored_http_port(port: u16) -> bool {
         && ![22, 80, 443, 3306, 5432, 6379].contains(&port)
 }
 
-fn http_status(url: &str) -> Option<u16> {
+fn http_check(url: &str) -> Option<(u16, u64)> {
+    let started = std::time::Instant::now();
     let rest = url.strip_prefix("http://")?;
     let (host_port, path) = rest.split_once('/').unwrap_or((rest, ""));
     let (host, port) = host_port.split_once(':').unwrap_or((host_port, "80"));
@@ -723,7 +728,9 @@ fn http_status(url: &str) -> Option<u16> {
     let mut buffer = [0; 128];
     let size = stream.read(&mut buffer).ok()?;
     let first_line = String::from_utf8_lossy(&buffer[..size]);
-    first_line.split_whitespace().nth(1)?.parse().ok()
+    let status = first_line.split_whitespace().nth(1)?.parse().ok()?;
+    let elapsed_ms = started.elapsed().as_millis().min(u64::MAX as u128) as u64;
+    Some((status, elapsed_ms))
 }
 
 fn read_top_processes() -> Vec<ProcessInfo> {
@@ -845,9 +852,29 @@ mod tests {
         });
 
         assert_eq!(
-            http_status(&format!("http://127.0.0.1:{}/health", port)),
+            http_check(&format!("http://127.0.0.1:{}/health", port)).map(|(status, _)| status),
             Some(204)
         );
+    }
+
+    #[test]
+    fn http_check_reports_status_and_response_time() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+
+        thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buffer = [0; 256];
+            let _ = stream.read(&mut buffer);
+            thread::sleep(Duration::from_millis(30));
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n")
+                .unwrap();
+        });
+
+        let result = http_check(&format!("http://127.0.0.1:{}/health", port)).unwrap();
+        assert_eq!(result.0, 200);
+        assert!(result.1 >= 20);
     }
 
     #[test]
