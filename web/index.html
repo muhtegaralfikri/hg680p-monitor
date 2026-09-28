@@ -7,38 +7,38 @@
   <title>HG680P Monitor</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0f1214;
-      --surface: #171b1f;
-      --surface-2: #1f2429;
-      --line: #30373f;
-      --text: #e8ecef;
-      --muted: #9aa4ad;
-      --accent: #71b7b2;
-      --blue: #6aa7e8;
-      --green: #64c77b;
-      --yellow: #d6ad4f;
-      --red: #ee6a61;
-      --bar: #38414a;
-      --shadow: rgba(0, 0, 0, .18);
+      color-scheme: light;
+      --bg: #f8fafb;
+      --surface: #ffffff;
+      --surface-2: #f1f5f6;
+      --line: #e0e7e9;
+      --text: #17252a;
+      --muted: #52676e;
+      --accent: #087d7a;
+      --blue: #316fc2;
+      --green: #18834b;
+      --yellow: #a66d00;
+      --red: #c53c35;
+      --bar: #e2ebed;
+      --shadow: rgba(24, 35, 39, .025);
       --radius: 6px;
     }
 
-    [data-theme="light"] {
-      color-scheme: light;
-      --bg: #f5f6f2;
-      --surface: #ffffff;
-      --surface-2: #eef0ea;
-      --line: #d3d8ce;
-      --text: #202522;
-      --muted: #5f6a63;
-      --accent: #287d79;
-      --blue: #246eb9;
-      --green: #257a3e;
-      --yellow: #8a6414;
-      --red: #b23b35;
-      --bar: #dce1d8;
-      --shadow: rgba(32, 37, 34, .07);
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #111719;
+      --surface: #192124;
+      --surface-2: #222d30;
+      --line: #344144;
+      --text: #e6eeee;
+      --muted: #a5b2b4;
+      --accent: #69c0b4;
+      --blue: #7eafea;
+      --green: #72ce8b;
+      --yellow: #e0bb62;
+      --red: #f07b70;
+      --bar: #374548;
+      --shadow: rgba(0, 0, 0, .12);
     }
 
     * { box-sizing: border-box; }
@@ -198,7 +198,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: var(--surface);
-      box-shadow: 0 10px 22px var(--shadow);
+      box-shadow: 0 2px 8px var(--shadow);
       animation: panel-in .34s ease both;
       transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
     }
@@ -305,6 +305,26 @@
     .legend i { width: 12px; height: 2px; border-radius: 2px; background: currentColor; }
     .split { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
     .side { display: grid; gap: 12px; }
+    .website-page { display: none; }
+    .website-open .metrics,
+    .website-open .layout { display: none; }
+    .website-open .website-page { display: block; }
+    .website-page-head,
+    .website-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .website-page-head { flex-wrap: wrap; }
+    .website-identity { min-width: 0; }
+    .website-title { margin-top: 6px; overflow-wrap: anywhere; font-size: 24px; }
+    .website-url { margin-top: 6px; color: var(--muted); overflow-wrap: anywhere; }
+    .website-status { display: flex; align-items: center; gap: 10px; margin: 24px 0; padding: 18px; border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: var(--radius); background: var(--surface-2); }
+    .website-status.down { border-left-color: var(--red); }
+    .website-status strong { display: block; font-size: 20px; }
+    .website-status span { color: var(--muted); }
+    .website-page .detail-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .website-page .detail-tile { padding: 14px; }
+    .website-page .detail-tile strong { margin-top: 6px; font-size: 16px; }
+    .website-actions { justify-content: flex-start; margin-top: 20px; }
+    .website-actions .button { display: inline-flex; align-items: center; min-height: 38px; text-decoration: none; }
+    .website-open .page-head h1 { font-size: 16px; }
 
     .rows,
     .service-list,
@@ -519,6 +539,136 @@
       .metric-value { font-size: 22px; }
       .detail-grid { grid-template-columns: 1fr; }
       table { min-width: 300px; }
+      .website-page .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .website-status { margin: 16px 0; padding: 14px; }
+    }
+
+    @media (max-width: 480px) {
+      .website-page .detail-grid { grid-template-columns: 1fr 1fr; }
+      .website-title { font-size: 20px; }
+      .website-actions { align-items: stretch; flex-direction: column; }
+    }
+
+    :root {
+      --bg: #f3f7fa;
+      --surface: #ffffff;
+      --surface-2: #f6f9fb;
+      --line: #dce5eb;
+      --text: #1c2c36;
+      --muted: #607681;
+      --accent: #087f8c;
+      --blue: #2563eb;
+      --green: #009b62;
+      --yellow: #cf8100;
+      --red: #d94343;
+      --bar: #e7edf1;
+      --shadow: transparent;
+      --radius: 8px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #10191f;
+      --surface: #18252d;
+      --surface-2: #20323c;
+      --line: #344b58;
+      --text: #edf5f8;
+      --muted: #b4c6cf;
+      --accent: #35c4c0;
+      --blue: #72a7ff;
+      --green: #36d38b;
+      --yellow: #ffc34d;
+      --red: #ff7777;
+      --bar: #304650;
+    }
+
+    body { background: var(--bg); }
+    .topbar { background: var(--surface); backdrop-filter: none; }
+    main { width: min(100%, 1560px); padding-top: 24px; }
+    .page-head { align-items: center; margin-bottom: 20px; }
+    h1 { font-size: 26px; }
+    h2 { font-size: 15px; }
+    .card, .metric {
+      border-color: var(--line);
+      border-radius: 8px;
+      box-shadow: none;
+      animation: none;
+      transition: border-color .15s ease, background-color .15s ease;
+    }
+    .card:hover, .metric:hover { transform: none; border-color: var(--line); }
+    .metric { --metric-color: var(--muted); min-height: 126px; padding: 16px; border-top: 3px solid var(--metric-color); background: var(--surface); }
+    .metric-label { color: var(--metric-color); font-size: 12px; font-weight: 700; }
+    .metric-value { color: var(--metric-color); font-size: 32px; }
+    .metric-value small { color: var(--muted); }
+    .bar { height: 8px; border-radius: 8px; }
+    .bar > span { border-radius: 8px; }
+    .section { padding: 16px; }
+    .section-head { padding-bottom: 12px; }
+    .chart-card { margin-top: 16px; }
+    .layout > div > .chart-card:first-child .chart { height: 340px; }
+    .chart { height: 300px; border: 0; border-radius: 4px; background: var(--surface); }
+    #cpuCard, #ramCard, #diskCard, #tempCard { background: var(--surface); }
+    .layout > div > .chart-card:first-child { display: flex; flex-direction: column; height: 308px; }
+    .layout > div > .chart-card:first-child .chart { flex: 1 1 auto; min-height: 0; height: auto; }
+    .legend { margin-top: 5px; }
+    .split { gap: 16px; margin-top: 16px; }
+    .side { gap: 16px; }
+    .layout { grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; margin-top: 16px; }
+    .layout > div > .chart-card:first-child { margin-top: 0; }
+    .rows, .service-list, .disk-list, .container-list { margin-top: 4px; }
+    .row, .service-row, .website-button, .progress-row { border-color: var(--line); }
+    .website-button { padding: 12px 10px; }
+    .website-button:hover, .website-button:focus-visible, .website-button.active { background: var(--surface-2); }
+    .website-button.active { box-shadow: inset 3px 0 var(--accent); }
+    .dot { color: var(--green); font-weight: 700; }
+    .dot.off { color: var(--red); }
+    .chip, .badge { border-radius: 4px; }
+    .chip { min-height: 0; padding: 0; border: 0; background: transparent; font-weight: 700; }
+    .chip.ok { color: var(--green); }
+    .chip.warn { color: var(--yellow); }
+    .chip.bad { color: var(--red); }
+    .badge { background: var(--surface-2); }
+    .button, .icon-button { min-height: 36px; border-radius: 6px; background: var(--surface); }
+    .button { padding: 7px 12px; }
+    .button:hover, .icon-button:hover { background: var(--surface-2); border-color: var(--accent); }
+    :focus-visible { outline: 3px solid color-mix(in srgb, var(--blue) 45%, transparent); outline-offset: 2px; }
+    .detail-tile { border-color: var(--line); border-radius: 6px; background: var(--surface-2); }
+    .website-status { border-radius: 8px; background: #e8f8f0; }
+    .website-status strong { color: #007b4e; }
+    .website-status.down { background: #fff0f0; }
+    .website-status.down strong { color: #b72d35; }
+    [data-theme="dark"] .website-status { background: #18392e; }
+    [data-theme="dark"] .website-status strong { color: #59e3a5; }
+    [data-theme="dark"] .website-status.down { background: #3e2429; }
+    [data-theme="dark"] .website-status.down strong { color: #ff9292; }
+    th { background: var(--surface-2); }
+    .action-grid { gap: 6px; }
+    .action-grid .button { text-align: center; }
+
+    @media (max-width: 1100px) {
+      main { padding: 18px 16px 28px; }
+      .layout { grid-template-columns: minmax(0, 1fr); }
+      .side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 860px) {
+      main { padding: 16px 12px 24px; }
+      .topbar { background: var(--surface); }
+      .chart { height: 250px; }
+      .layout > div > .chart-card:first-child { height: auto; }
+      .layout > div > .chart-card:first-child .chart { flex: initial; min-height: 250px; height: 250px; }
+      .metric { min-height: 112px; }
+      .layout, .side { grid-template-columns: minmax(0, 1fr); }
+      .split, .side { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 22px; }
+      .chart { height: 210px; }
+      .layout > div > .chart-card:first-child .chart { min-height: 210px; height: 210px; }
+      .metric { min-height: 106px; padding: 12px; }
+      .metric-value { font-size: 26px; }
+      .section { padding: 12px; }
+      .website-page .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -533,17 +683,42 @@
       </div>
       <div class="top-actions">
         <button class="button mono" id="refreshButton" type="button">Refresh</button>
-        <button class="icon-button mono" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">T</button>
+        <button class="button mono" id="themeToggle" type="button" title="Ganti tema" aria-label="Ganti tema">Tema</button>
       </div>
     </header>
 
     <main>
       <section class="page-head" aria-label="Ringkasan">
         <div>
-          <h1>Dashboard</h1>
+          <h1 id="pageTitle">Dashboard</h1>
           <p class="mono" id="subtitle">Memuat telemetry server...</p>
         </div>
         <span class="badge mono">auto-sync 5s</span>
+      </section>
+
+      <section class="card section website-page" id="websitePage" aria-label="Detail website" aria-live="polite">
+        <div class="website-page-head">
+          <div class="website-identity">
+            <span class="badge mono">WEBSITE MONITOR</span>
+            <h2 class="website-title" id="focusName">Website</h2>
+            <p class="website-url mono" id="focusUrl">-</p>
+          </div>
+          <span class="badge mono" id="focusBadge">-</span>
+        </div>
+        <div class="website-status" id="focusStatus">
+          <strong id="focusState">-</strong>
+          <span id="focusMessage">Status terbaru dari pemeriksaan monitor.</span>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-tile mono"><span>Status monitor</span><strong id="focusHealth">-</strong></div>
+          <div class="detail-tile mono"><span>Kode HTTP</span><strong id="focusHttp">-</strong></div>
+          <div class="detail-tile mono"><span>URL</span><strong id="focusAddress">-</strong></div>
+          <div class="detail-tile mono"><span>Pembaruan terakhir</span><strong id="focusChecked">-</strong></div>
+        </div>
+        <div class="website-actions">
+          <button class="button mono" id="websiteBack" type="button">Kembali ke dashboard</button>
+          <a class="button mono" id="websiteOpen" target="_blank" rel="noopener noreferrer">Buka website</a>
+        </div>
       </section>
 
       <section class="grid metrics" aria-label="Metrik utama">
@@ -630,20 +805,6 @@
             </div>
           </article>
 
-          <article class="card section" id="websiteDetailCard">
-            <div class="section-head"><h2>Website Detail</h2><span class="badge mono" id="websiteDetailBadge">-</span></div>
-            <div class="rows">
-              <div class="row"><span class="muted">Nama</span><strong class="mono truncate" id="websiteDetailName">Pilih website</strong></div>
-              <div class="row"><span class="muted">URL</span><strong class="mono truncate" id="websiteDetailUrl">-</strong></div>
-            </div>
-            <div class="detail-grid">
-              <div class="detail-tile mono"><span>Status</span><strong id="websiteDetailStatus">-</strong></div>
-              <div class="detail-tile mono"><span>Kondisi</span><strong id="websiteDetailHealth">-</strong></div>
-              <div class="detail-tile mono"><span>HTTP</span><strong id="websiteDetailHttp">-</strong></div>
-              <div class="detail-tile mono"><span>Dicek</span><strong id="websiteDetailChecked">-</strong></div>
-            </div>
-          </article>
-
           <article class="card section">
             <div class="section-head"><h2>Swap</h2><span class="badge mono" id="swapLabel">-</span></div>
             <div class="bar"><span id="swapBar"></span></div>
@@ -680,6 +841,7 @@
     let lastData = null;
     let chartFrame = 0;
     let selectedWebsite = "";
+    let websitePageOpen = false;
 
     function cssVar(name) {
       return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -764,6 +926,11 @@
       return { label: status ? "down" : "offline", className: "off", text: status || "-" };
     }
 
+    function websiteFromHash(websites) {
+      const key = new URLSearchParams(location.hash.slice(1)).get("website");
+      return (websites || []).find((site) => siteKey(site) === key);
+    }
+
     function loadText(load) {
       if (Array.isArray(load)) return load.map(one).join(" / ");
       if (load && typeof load === "object") return [load.one, load.five, load.fifteen].map(one).join(" / ");
@@ -774,9 +941,11 @@
       const state = customTone || tone(percent);
       const card = $(`${prefix}Card`);
       card.style.setProperty("--tone", state.color);
+      card.style.setProperty("--metric-color", state.color);
       $(`${prefix}Value`).textContent = value;
       $(`${prefix}Detail`).textContent = detail;
       $(`${prefix}Badge`).textContent = badge || state.name;
+      $(`${prefix}Badge`).style.color = state.color;
       $(`${prefix}Bar`).style.width = `${pct(percent)}%`;
       $(`${prefix}Bar`).style.background = state.color;
     }
@@ -802,21 +971,15 @@
         if (index === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       });
-      ctx.lineWidth = 2.2;
+      ctx.lineWidth = 2;
       ctx.strokeStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 7;
       ctx.stroke();
-      ctx.shadowBlur = 0;
 
       ctx.lineTo(bounds.x + ((rows.length - 1) / Math.max(1, values.length - 1)) * bounds.w, bounds.y + bounds.h);
       ctx.lineTo(bounds.x, bounds.y + bounds.h);
       ctx.closePath();
-      const fill = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.h);
-      fill.addColorStop(0, color);
-      fill.addColorStop(1, "transparent");
-      ctx.globalAlpha = .10;
-      ctx.fillStyle = fill;
+      ctx.globalAlpha = .045;
+      ctx.fillStyle = color;
       ctx.fill();
       ctx.globalAlpha = 1;
 
@@ -844,7 +1007,7 @@
       ctx.clearRect(0, 0, w, h);
       ctx.font = "11px JetBrains Mono, ui-monospace, monospace";
       ctx.fillStyle = cssVar("--muted");
-      ctx.strokeStyle = document.documentElement.dataset.theme === "light" ? "rgba(95,106,99,.24)" : "rgba(154,164,173,.20)";
+      ctx.strokeStyle = document.documentElement.dataset.theme === "dark" ? "rgba(165,178,180,.20)" : "rgba(82,103,110,.15)";
       ctx.lineWidth = 1;
 
       [0, 25, 50, 75, 100].forEach((mark) => {
@@ -899,6 +1062,15 @@
       const list = Array.isArray(websites) ? websites : [];
       const up = list.filter((site) => site.ok).length;
       $("websitesCount").textContent = list.length ? `${up}/${list.length}` : "0";
+      if (!selectedWebsite) selectedWebsite = siteKey(websiteFromHash(list) || list[0]);
+      const hashSite = websiteFromHash(list);
+      if (hashSite) {
+        selectedWebsite = siteKey(hashSite);
+        websitePageOpen = true;
+      } else if (location.hash.startsWith("#website=")) {
+        websitePageOpen = false;
+        historyReplaceDashboard();
+      }
       if (!list.some((site) => siteKey(site) === selectedWebsite)) selectedWebsite = siteKey(list[0]);
       $("websites").innerHTML = list.map((site) => `
         <li>
@@ -911,21 +1083,49 @@
           </button>
         </li>
       `).join("") || `<li class="service-row muted mono">Belum ada website terdeteksi.</li>`;
-      renderWebsiteDetail(list);
+      renderWebsitePage(list);
     }
 
-    function renderWebsiteDetail(websites) {
+    function renderWebsitePage(websites) {
       const list = Array.isArray(websites) ? websites : [];
       const site = list.find((item) => siteKey(item) === selectedWebsite);
       const state = websiteStatus(site);
-      $("websiteDetailBadge").textContent = site ? state.label : "-";
-      $("websiteDetailBadge").style.color = site?.ok ? cssVar("--green") : cssVar("--red");
-      $("websiteDetailName").textContent = site?.name || "Pilih website";
-      $("websiteDetailUrl").textContent = site?.url || "-";
-      $("websiteDetailStatus").textContent = state.label;
-      $("websiteDetailHealth").textContent = site?.ok ? "up" : site ? "butuh cek" : "-";
-      $("websiteDetailHttp").textContent = state.text;
-      $("websiteDetailChecked").textContent = $("updatedTime").textContent || "-";
+      document.body.classList.toggle("website-open", websitePageOpen && !!site);
+      $("pageTitle").textContent = websitePageOpen && site ? "Detail Website" : "Dashboard";
+      $("subtitle").textContent = websitePageOpen && site
+        ? `Pemantauan aktif untuk ${site.url}`
+        : `${lastData?.hostname || "server"} - website auto-discovery dari nginx dan Docker`;
+      $("focusName").textContent = site?.name || site?.url || "Website";
+      $("focusUrl").textContent = site?.url || "-";
+      $("focusBadge").textContent = site ? state.label : "-";
+      $("focusBadge").style.color = site?.ok ? cssVar("--green") : cssVar("--red");
+      $("focusStatus").classList.toggle("down", !!site && !site.ok);
+      $("focusState").textContent = site ? state.label : "-";
+      $("focusMessage").textContent = site?.ok ? "Website merespons saat pemeriksaan terakhir." : site ? "Website tidak merespons dengan status sukses." : "Website tidak ditemukan.";
+      $("focusHealth").textContent = site?.ok ? "Tersedia" : site ? "Tidak tersedia" : "-";
+      $("focusHttp").textContent = state.text;
+      $("focusAddress").textContent = site?.url || "-";
+      $("focusChecked").textContent = $("updatedTime").textContent || "-";
+      if (site?.url) $("websiteOpen").href = site.url;
+      else $("websiteOpen").removeAttribute("href");
+    }
+
+    function historyReplaceDashboard() {
+      window.history.replaceState(null, "", location.pathname + location.search);
+    }
+
+    function openWebsite(key) {
+      selectedWebsite = key;
+      websitePageOpen = true;
+      location.hash = `website=${encodeURIComponent(key)}`;
+      renderWebsites(lastData?.websites);
+      window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+
+    function closeWebsite() {
+      websitePageOpen = false;
+      historyReplaceDashboard();
+      renderWebsites(lastData?.websites);
     }
 
     function renderDisks(disks) {
@@ -1083,9 +1283,10 @@
 
     function initTheme() {
       const saved = localStorage.getItem("monitor-theme");
-      if (saved) document.documentElement.dataset.theme = saved;
+      if (saved === "dark") document.documentElement.dataset.theme = "dark";
+      else if (saved === "light") localStorage.removeItem("monitor-theme");
       $("themeToggle").addEventListener("click", () => {
-        const next = document.documentElement.dataset.theme === "light" ? "" : "light";
+        const next = document.documentElement.dataset.theme === "dark" ? "" : "dark";
         document.documentElement.dataset.theme = next;
         if (next) localStorage.setItem("monitor-theme", next);
         else localStorage.removeItem("monitor-theme");
@@ -1097,12 +1298,15 @@
       const button = event.target.closest("[data-update]");
       if (button) triggerUpdate(button.dataset.update, button);
       const website = event.target.closest("[data-website]");
-      if (website) {
-        selectedWebsite = website.dataset.website;
-        renderWebsites(lastData?.websites);
-      }
+      if (website) openWebsite(website.dataset.website);
     });
 
+    $("websiteBack").addEventListener("click", closeWebsite);
+    window.addEventListener("hashchange", () => {
+      const site = websiteFromHash(lastData?.websites);
+      if (site) openWebsite(siteKey(site));
+      else closeWebsite();
+    });
     $("refreshButton").addEventListener("click", refresh);
     initTheme();
     refresh();
