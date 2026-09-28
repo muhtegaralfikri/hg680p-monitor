@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
   <title>HG680P Monitor</title>
   <style>
     :root {
@@ -185,6 +186,10 @@
       align-items: start;
     }
 
+    .layout > *,
+    .split > *,
+    .side > * { min-width: 0; }
+
     .grid { display: grid; gap: 12px; }
     .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -314,6 +319,7 @@
 
     .row,
     .service-row,
+    .website-button,
     .progress-row {
       padding: 9px 0;
       border-bottom: 1px solid var(--line);
@@ -321,7 +327,33 @@
 
     .row:last-child,
     .service-row:last-child,
+    .website-button:last-child,
     .progress-row:last-child { border-bottom: 0; }
+
+    .website-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .website-button:hover,
+    .website-button:focus-visible,
+    .website-button.active {
+      outline: 0;
+      background: var(--surface-2);
+    }
+
+    .website-button.active {
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
 
     .service-main {
       display: grid;
@@ -350,6 +382,35 @@
     .action-grid { display: grid; gap: 8px; margin-top: 10px; }
     .action-grid .button { width: 100%; text-align: left; }
     .table-wrap { overflow-x: auto; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .detail-tile {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface-2);
+    }
+
+    .detail-tile span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .detail-tile strong {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     table {
       width: 100%;
@@ -436,7 +497,12 @@
       .metric { min-height: 96px; }
       .metric-value { font-size: 24px; }
       .chart { height: 220px; }
-      .service-row { align-items: flex-start; flex-direction: column; gap: 6px; }
+      .service-row,
+      .website-button {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
       table { min-width: 420px; font-size: 12px; }
       th, td { padding: 8px; }
     }
@@ -451,7 +517,8 @@
       .section { padding: 10px; }
       .chart { height: 190px; }
       .metric-value { font-size: 22px; }
-      table { min-width: 360px; }
+      .detail-grid { grid-template-columns: 1fr; }
+      table { min-width: 300px; }
     }
   </style>
 </head>
@@ -563,6 +630,20 @@
             </div>
           </article>
 
+          <article class="card section" id="websiteDetailCard">
+            <div class="section-head"><h2>Website Detail</h2><span class="badge mono" id="websiteDetailBadge">-</span></div>
+            <div class="rows">
+              <div class="row"><span class="muted">Nama</span><strong class="mono truncate" id="websiteDetailName">Pilih website</strong></div>
+              <div class="row"><span class="muted">URL</span><strong class="mono truncate" id="websiteDetailUrl">-</strong></div>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-tile mono"><span>Status</span><strong id="websiteDetailStatus">-</strong></div>
+              <div class="detail-tile mono"><span>Kondisi</span><strong id="websiteDetailHealth">-</strong></div>
+              <div class="detail-tile mono"><span>HTTP</span><strong id="websiteDetailHttp">-</strong></div>
+              <div class="detail-tile mono"><span>Dicek</span><strong id="websiteDetailChecked">-</strong></div>
+            </div>
+          </article>
+
           <article class="card section">
             <div class="section-head"><h2>Swap</h2><span class="badge mono" id="swapLabel">-</span></div>
             <div class="bar"><span id="swapBar"></span></div>
@@ -598,6 +679,7 @@
     let updateToken = "";
     let lastData = null;
     let chartFrame = 0;
+    let selectedWebsite = "";
 
     function cssVar(name) {
       return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -672,6 +754,16 @@
       return { name: celsius === null || celsius === undefined ? "n/a" : "normal", className: "ok", color: cssVar("--green") };
     }
 
+    function siteKey(site) {
+      return site?.url || site?.name || "";
+    }
+
+    function websiteStatus(site) {
+      const status = Number(site?.status || 0);
+      if (site?.ok) return { label: "running", className: "", text: status || "OK" };
+      return { label: status ? "down" : "offline", className: "off", text: status || "-" };
+    }
+
     function loadText(load) {
       if (Array.isArray(load)) return load.map(one).join(" / ");
       if (load && typeof load === "object") return [load.one, load.five, load.fifteen].map(one).join(" / ");
@@ -716,6 +808,17 @@
       ctx.shadowBlur = 7;
       ctx.stroke();
       ctx.shadowBlur = 0;
+
+      ctx.lineTo(bounds.x + ((rows.length - 1) / Math.max(1, values.length - 1)) * bounds.w, bounds.y + bounds.h);
+      ctx.lineTo(bounds.x, bounds.y + bounds.h);
+      ctx.closePath();
+      const fill = ctx.createLinearGradient(0, bounds.y, 0, bounds.y + bounds.h);
+      fill.addColorStop(0, color);
+      fill.addColorStop(1, "transparent");
+      ctx.globalAlpha = .10;
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.globalAlpha = 1;
 
       const lastIndex = rows.length - 1;
       const lastValue = rows[lastIndex];
@@ -796,15 +899,33 @@
       const list = Array.isArray(websites) ? websites : [];
       const up = list.filter((site) => site.ok).length;
       $("websitesCount").textContent = list.length ? `${up}/${list.length}` : "0";
+      if (!list.some((site) => siteKey(site) === selectedWebsite)) selectedWebsite = siteKey(list[0]);
       $("websites").innerHTML = list.map((site) => `
-        <li class="service-row">
-          <span class="service-main">
-            <strong class="mono truncate">${esc(site.name || site.url)}</strong>
-            <span class="muted mono truncate">${esc(site.url)}</span>
-          </span>
-          <span class="dot mono ${site.ok ? "" : "off"}">${site.status || "down"}</span>
+        <li>
+          <button class="website-button ${siteKey(site) === selectedWebsite ? "active" : ""}" type="button" data-website="${esc(siteKey(site))}">
+            <span class="service-main">
+              <strong class="mono truncate">${esc(site.name || site.url)}</strong>
+              <span class="muted mono truncate">${esc(site.url)}</span>
+            </span>
+            <span class="dot mono ${websiteStatus(site).className}">${websiteStatus(site).label}</span>
+          </button>
         </li>
       `).join("") || `<li class="service-row muted mono">Belum ada website terdeteksi.</li>`;
+      renderWebsiteDetail(list);
+    }
+
+    function renderWebsiteDetail(websites) {
+      const list = Array.isArray(websites) ? websites : [];
+      const site = list.find((item) => siteKey(item) === selectedWebsite);
+      const state = websiteStatus(site);
+      $("websiteDetailBadge").textContent = site ? state.label : "-";
+      $("websiteDetailBadge").style.color = site?.ok ? cssVar("--green") : cssVar("--red");
+      $("websiteDetailName").textContent = site?.name || "Pilih website";
+      $("websiteDetailUrl").textContent = site?.url || "-";
+      $("websiteDetailStatus").textContent = state.label;
+      $("websiteDetailHealth").textContent = site?.ok ? "up" : site ? "butuh cek" : "-";
+      $("websiteDetailHttp").textContent = state.text;
+      $("websiteDetailChecked").textContent = $("updatedTime").textContent || "-";
     }
 
     function renderDisks(disks) {
@@ -975,6 +1096,11 @@
     document.addEventListener("click", (event) => {
       const button = event.target.closest("[data-update]");
       if (button) triggerUpdate(button.dataset.update, button);
+      const website = event.target.closest("[data-website]");
+      if (website) {
+        selectedWebsite = website.dataset.website;
+        renderWebsites(lastData?.websites);
+      }
     });
 
     $("refreshButton").addEventListener("click", refresh);
