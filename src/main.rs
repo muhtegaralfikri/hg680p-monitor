@@ -659,24 +659,46 @@ fn discover_docker_ports(items: &mut Vec<String>) {
         _ => return,
     };
 
+    discover_docker_ports_from_lines(items, &stdout);
+}
+
+fn discover_docker_ports_from_lines(items: &mut Vec<String>, stdout: &str) {
     for line in stdout.lines() {
         let Some((name, ports)) = line.split_once('|') else {
             continue;
         };
         for part in ports.split(',') {
-            let Some(port) = part
-                .split("->")
-                .next()
-                .and_then(|left| left.rsplit(':').next())
-                .and_then(|value| value.parse::<u16>().ok())
-            else {
+            let Some((host, port)) = docker_published_host_port(part) else {
                 continue;
             };
-            if port != 80 && port != 443 && port != 5432 && port != 6379 {
-                items.push(format!("{}=http://127.0.0.1:{}/", name, port));
+            if monitored_website_port(port) {
+                items.push(format!(
+                    "{}={}://{}:{}/",
+                    name,
+                    website_scheme(name, port),
+                    host,
+                    port
+                ));
             }
         }
     }
+}
+
+fn docker_published_host_port(part: &str) -> Option<(String, u16)> {
+    let part = part.trim();
+    if !part.ends_with("/tcp") {
+        return None;
+    }
+
+    let left = part.split_once("->")?.0.trim();
+    let (host, port) = left.rsplit_once(':')?;
+    let port = port.parse::<u16>().ok()?;
+    let host = match host.trim().trim_matches(['[', ']']) {
+        "" | "::" | "0.0.0.0" => "127.0.0.1",
+        value => value,
+    };
+
+    Some((host.to_string(), port))
 }
 
 fn discover_listening_ports(items: &mut Vec<String>) {
@@ -694,7 +716,12 @@ fn discover_listening_ports(items: &mut Vec<String>) {
             continue;
         };
         if monitored_http_port(port) {
-            items.push(format!("port-{}=http://127.0.0.1:{}/", port, port));
+            items.push(format!(
+                "port-{}={}://127.0.0.1:{}/",
+                port,
+                website_scheme("port", port),
+                port
+            ));
         }
     }
 }
@@ -707,11 +734,30 @@ fn listening_port(line: &str) -> Option<u16> {
 fn monitored_http_port(port: u16) -> bool {
     ((3000..4000).contains(&port) || (8000..9000).contains(&port))
         && !is_monitor_port(port)
-        && ![22, 80, 443, 3306, 5432, 6379].contains(&port)
+        && monitored_website_port(port)
+}
+
+fn monitored_website_port(port: u16) -> bool {
+    ((3000..4000).contains(&port) || (8000..10000).contains(&port) || [80, 443].contains(&port))
+        && !is_monitor_port(port)
+        && ![22, 53, 67, 68, 111, 555, 3306, 5432, 6379].contains(&port)
+}
+
+fn website_scheme(name: &str, port: u16) -> &'static str {
+    let name = name.to_ascii_lowercase();
+    if [443, 8443, 9443].contains(&port) || name.contains("portainer") {
+        "https"
+    } else {
+        "http"
+    }
 }
 
 fn http_check(url: &str) -> Option<(u16, u64)> {
     let started = std::time::Instant::now();
+    if url.starts_with("https://") {
+        return https_check_with_curl(url, started);
+    }
+
     let rest = url.strip_prefix("http://")?;
     let (host_port, path) = rest.split_once('/').unwrap_or((rest, ""));
     let (host, port) = host_port.split_once(':').unwrap_or((host_port, "80"));
@@ -729,6 +775,35 @@ fn http_check(url: &str) -> Option<(u16, u64)> {
     let size = stream.read(&mut buffer).ok()?;
     let first_line = String::from_utf8_lossy(&buffer[..size]);
     let status = first_line.split_whitespace().nth(1)?.parse().ok()?;
+    let elapsed_ms = started.elapsed().as_millis().min(u64::MAX as u128) as u64;
+    Some((status, elapsed_ms))
+}
+
+fn https_check_with_curl(url: &str, started: std::time::Instant) -> Option<(u16, u64)> {
+    let output = Command::new("curl")
+        .args([
+            "-k",
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "--max-time",
+            "2",
+            url,
+        ])
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let status = String::from_utf8(output.stdout)
+        .ok()?
+        .trim()
+        .parse::<u16>()
+        .ok()?;
     let elapsed_ms = started.elapsed().as_millis().min(u64::MAX as u128) as u64;
     Some((status, elapsed_ms))
 }
@@ -951,5 +1026,27 @@ mod tests {
         assert!(!monitored_http_port(8099));
         assert!(!monitored_http_port(3306));
         assert!(!monitored_http_port(5432));
+    }
+
+    #[test]
+    fn docker_ports_use_published_host_and_skip_dns() {
+        let mut items = Vec::new();
+        discover_docker_ports_from_lines(
+            &mut items,
+            "adguard-home|192.168.2.10:53->53/tcp, 192.168.2.10:3000->3000/tcp, 3000/udp\n",
+        );
+
+        assert_eq!(
+            items,
+            vec!["adguard-home=http://192.168.2.10:3000/".to_string()]
+        );
+    }
+
+    #[test]
+    fn docker_ports_detect_https_management_ports() {
+        let mut items = Vec::new();
+        discover_docker_ports_from_lines(&mut items, "portainer|0.0.0.0:9443->9443/tcp\n");
+
+        assert_eq!(items, vec!["portainer=https://127.0.0.1:9443/".to_string()]);
     }
 }

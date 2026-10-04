@@ -21,8 +21,18 @@ Website dipantau otomatis dari:
 
 - Nginx aktif di `/etc/nginx/sites-enabled`
 - Port Docker yang dipublish ke host
+- Port TCP lokal yang umum dipakai aplikasi web
+
+Port non-HTTP seperti DNS `53`, database, dan port internal lain akan dilewati.
+Port HTTPS umum seperti `9443` akan dicek sebagai HTTPS.
 
 Jadi saat menambah website baru di server, cukup pastikan nginx site aktif atau container publish port ke host. Dashboard akan ikut menampilkan website baru saat refresh berikutnya tanpa edit config monitor.
+
+Untuk cek HTTPS, pastikan `curl` tersedia di server:
+
+```bash
+sudo apt install curl
+```
 
 Override manual tetap bisa lewat env:
 
