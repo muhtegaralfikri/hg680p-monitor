@@ -712,23 +712,31 @@ fn discover_listening_ports(items: &mut Vec<String>) {
     };
 
     for line in stdout.lines() {
-        let Some(port) = listening_port(line) else {
+        let Some((host, port)) = listening_host_port(line) else {
             continue;
         };
         if monitored_http_port(port) {
             items.push(format!(
-                "port-{}={}://127.0.0.1:{}/",
+                "port-{}={}://{}:{}/",
                 port,
                 website_scheme("port", port),
+                host,
                 port
             ));
         }
     }
 }
 
-fn listening_port(line: &str) -> Option<u16> {
+fn listening_host_port(line: &str) -> Option<(String, u16)> {
     let local = line.split_whitespace().nth(3)?;
-    local.rsplit(':').next()?.parse::<u16>().ok()
+    let (host, port) = local.rsplit_once(':')?;
+    let port = port.parse::<u16>().ok()?;
+    let host = match host.trim().trim_matches(['[', ']']) {
+        "" | "::" | "0.0.0.0" => "127.0.0.1",
+        value => value,
+    };
+
+    Some((host.to_string(), port))
 }
 
 fn monitored_http_port(port: u16) -> bool {
@@ -1017,8 +1025,12 @@ mod tests {
     #[test]
     fn listening_ports_include_local_web_apps() {
         assert_eq!(
-            listening_port("LISTEN 0 128 0.0.0.0:8084 0.0.0.0:*"),
-            Some(8084)
+            listening_host_port("LISTEN 0 128 0.0.0.0:8084 0.0.0.0:*"),
+            Some(("127.0.0.1".to_string(), 8084))
+        );
+        assert_eq!(
+            listening_host_port("LISTEN 0 4096 192.168.2.10:3000 0.0.0.0:*"),
+            Some(("192.168.2.10".to_string(), 3000))
         );
         assert!(monitored_http_port(8080));
         assert!(monitored_http_port(8084));
