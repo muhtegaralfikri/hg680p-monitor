@@ -332,6 +332,25 @@
     @keyframes website-line-reveal { to { stroke-dashoffset: 0; } }
     .website-actions { justify-content: flex-start; margin-top: 20px; }
     .website-actions .button { display: inline-flex; align-items: center; min-height: 38px; text-decoration: none; }
+    .website-links { display: grid; gap: 8px; margin-top: 16px; }
+    .website-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      text-decoration: none;
+      background: var(--surface-2);
+    }
+    .website-link:hover,
+    .website-link:focus-visible { border-color: var(--accent); }
+    .website-link strong,
+    .website-link span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .website-link span { color: var(--muted); font-size: 12px; }
     .website-open .page-head h1 { font-size: 16px; }
 
     .rows,
@@ -749,6 +768,7 @@
           <div class="detail-tile mono"><span>Berhasil</span><strong id="focusAvailability">-</strong></div>
           <div class="detail-tile mono"><span>Rata-rata respons</span><strong id="focusAverage">-</strong></div>
         </div>
+        <div class="website-links" id="websiteLinks"></div>
         <section class="website-history" aria-labelledby="websiteHistoryTitle">
           <div class="section-head">
             <h2 id="websiteHistoryTitle">Riwayat respons</h2>
@@ -1158,6 +1178,26 @@
       `).join("") || `<li class="service-row muted mono">Tidak ada service yang dipantau.</li>`;
     }
 
+    const PUBLIC_URLS = {
+      "arjuna-multimedia-web": ["https://arjunanet.com"],
+      "revenue-bosowa-ci": ["https://revenue.muhtegaralfikri.my.id"]
+    };
+
+    function websiteAccessLinks(site) {
+      if (!site?.url) return [];
+      let parsed;
+      try { parsed = new URL(site.url); } catch (_) { return []; }
+      const port = parsed.port || (parsed.protocol === "https:" ? "443" : "80");
+      const path = parsed.pathname || "/";
+      const rows = [
+        { label: "Internal", url: site.url },
+        { label: "LAN", url: `${parsed.protocol}//192.168.2.10:${port}${path}` },
+        { label: "Tailscale", url: `${parsed.protocol}//100.84.28.55:${port}${path}` }
+      ];
+      (PUBLIC_URLS[site.name] || []).forEach((url) => rows.push({ label: "Domain", url }));
+      return rows.filter((row, index) => rows.findIndex((item) => item.url === row.url) === index);
+    }
+
     function renderWebsites(websites) {
       const list = Array.isArray(websites) ? websites : [];
       const up = list.filter((site) => site.ok).length;
@@ -1209,6 +1249,12 @@
       $("focusLatency").textContent = Number.isFinite(site?.response_time_ms) ? `${site.response_time_ms} ms` : "Tidak terukur";
       $("focusAvailability").textContent = samples.length ? `${(successfulSamples.length / samples.length * 100).toFixed(1)}%` : "-";
       $("focusAverage").textContent = latencies.length ? `${Math.round(latencies.reduce((sum, value) => sum + value, 0) / latencies.length)} ms` : "-";
+      $("websiteLinks").innerHTML = websiteAccessLinks(site).map((link) => `
+        <a class="website-link mono" href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">
+          <strong>${esc(link.label)}</strong>
+          <span>${esc(link.url)}</span>
+        </a>
+      `).join("") || `<div class="muted mono">Tidak ada alamat akses.</div>`;
       $("websiteSamplesCount").textContent = `${samples.length} pemeriksaan`;
       renderWebsiteChart(samples);
       const key = siteKey(site);
